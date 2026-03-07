@@ -1,0 +1,78 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Config;
+
+use CodeIgniter\Router\RouteCollection;
+
+/** @var RouteCollection $routes */
+
+// ── API v1 ────────────────────────────────────────────────────────
+$routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], static function ($routes) {
+
+    // 認證（無需 JWT）
+    $routes->post('auth/login',   'Auth\AuthController::login');
+    $routes->post('auth/refresh', 'Auth\AuthController::refresh');
+
+    // 需要 JWT 的路由群組
+    $routes->group('', ['filter' => 'auth'], static function ($routes) {
+
+        $routes->post('auth/logout', 'Auth\AuthController::logout');
+        $routes->get('auth/me',      'Auth\AuthController::me');
+
+        // ── 商品管理 ──────────────────────────────────────
+        $routes->get('items',           'Items\ItemController::index');
+        $routes->post('items',          'Items\ItemController::create');
+        $routes->get('items/(:num)',     'Items\ItemController::show/$1');
+        $routes->put('items/(:num)',     'Items\ItemController::update/$1');
+        $routes->delete('items/(:num)', 'Items\ItemController::remove/$1');
+
+        // SKU
+        $routes->get('items/(:num)/skus',    'Items\SkuController::index/$1');
+        $routes->post('items/(:num)/skus',   'Items\SkuController::create/$1');
+        $routes->put('skus/(:num)',          'Items\SkuController::update/$1');
+        $routes->delete('skus/(:num)',       'Items\SkuController::remove/$1');
+
+        // ── 庫存查詢 ──────────────────────────────────────
+        $routes->get('inventories',                    'Inventory\InventoryController::index');
+        $routes->get('inventories/low-stock',          'Inventory\InventoryController::lowStock');
+        $routes->get('skus/(:num)/inventories',        'Inventory\InventoryController::bySku/$1');
+        $routes->post('inventories/adjust',            'Inventory\InventoryController::adjust');
+
+        // ── 採購管理 ──────────────────────────────────────
+        $routes->get('purchase-orders',              'Purchase\PurchaseOrderController::index');
+        $routes->post('purchase-orders',             'Purchase\PurchaseOrderController::create');
+        $routes->get('purchase-orders/(:num)',       'Purchase\PurchaseOrderController::show/$1');
+        $routes->post('purchase-orders/(:num)/submit',   'Purchase\PurchaseOrderController::submit/$1');
+        $routes->post('purchase-orders/(:num)/approve',  'Purchase\PurchaseOrderController::approve/$1');
+        $routes->post('purchase-orders/(:num)/cancel',   'Purchase\PurchaseOrderController::cancel/$1');
+        $routes->post('purchase-orders/(:num)/receive',  'Purchase\PurchaseOrderController::receive/$1');
+
+        // ── 銷售管理 ──────────────────────────────────────
+        $routes->get('sales-orders',                   'Sales\SalesOrderController::index');
+        $routes->post('sales-orders',                  'Sales\SalesOrderController::create');
+        $routes->get('sales-orders/(:num)',            'Sales\SalesOrderController::show/$1');
+        $routes->post('sales-orders/(:num)/confirm',   'Sales\SalesOrderController::confirm/$1');
+        $routes->post('sales-orders/(:num)/ship',      'Sales\SalesOrderController::ship/$1');
+        $routes->post('sales-orders/(:num)/cancel',    'Sales\SalesOrderController::cancel/$1');
+
+        // ── 倉庫管理 ──────────────────────────────────────
+        $routes->get('warehouses',           'Warehouse\WarehouseController::index');
+        $routes->post('warehouses',          'Warehouse\WarehouseController::create');
+        $routes->get('warehouses/(:num)',    'Warehouse\WarehouseController::show/$1');
+        $routes->put('warehouses/(:num)',    'Warehouse\WarehouseController::update/$1');
+
+        // ── 基礎資料 ──────────────────────────────────────
+        $routes->get('categories',  'Master\CategoryController::index');
+        $routes->post('categories', 'Master\CategoryController::create');
+        $routes->get('units',       'Master\UnitController::index');
+        $routes->get('suppliers',   'Master\SupplierController::index');
+        $routes->post('suppliers',  'Master\SupplierController::create');
+
+        // ── 報表 ──────────────────────────────────────────
+        $routes->get('reports/inventory-valuation', 'Report\ReportController::inventoryValuation');
+        $routes->get('reports/stock-movement',      'Report\ReportController::stockMovement');
+        $routes->get('reports/turnover-rate',       'Report\ReportController::turnoverRate');
+    });
+});

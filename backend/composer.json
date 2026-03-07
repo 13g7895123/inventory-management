@@ -1,0 +1,45 @@
+{
+    "name": "inventory/backend",
+    "description": "進銷存系統後端 — CodeIgniter 4",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": "^8.2",
+        "codeigniter4/framework": "^4.5",
+        "firebase/php-jwt": "^6.10",
+        "phpoffice/phpspreadsheet": "^3.0",
+        "dompdf/dompdf": "^2.0",
+        "predis/predis": "^2.2",
+        "league/flysystem": "^3.0",
+        "league/flysystem-aws-s3-v3": "^3.0"
+    },
+    "require-dev": {
+        "codeigniter4/devkit": "^1.2",
+        "fakerphp/faker": "^1.23",
+        "phpunit/phpunit": "^10.5",
+        "friendsofphp/php-cs-fixer": "^3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Config\\": "app/Config/"
+        },
+        "files": [
+            "app/Helpers/response_helper.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "test:unit": "phpunit --testsuite unit",
+        "test:feature": "phpunit --testsuite feature",
+        "cs-fix": "php-cs-fixer fix app --rules=@PSR12",
+        "cs-check": "php-cs-fixer fix app --rules=@PSR12 --dry-run"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
