@@ -25,8 +25,7 @@ RUN docker-php-ext-configure intl \
     gd \
     intl \
     xml \
-    zip \
-    opcache
+    zip
 
 # ── 安裝 Redis 擴充套件 ──
 RUN pecl install redis \
