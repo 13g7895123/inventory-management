@@ -40,7 +40,8 @@ COPY php.ini /usr/local/etc/php/conf.d/custom.ini
 WORKDIR /var/www/backend
 
 # ── 安裝 Composer 依賴（在 build 時快取，volume mount 前執行）──
-COPY ../../backend/composer*.json ./
+# context 為專案根目錄，故使用 backend/ 前綴
+COPY backend/composer*.json ./
 RUN composer install --no-scripts --no-autoloader --no-interaction 2>/dev/null || true
 
 EXPOSE 9000

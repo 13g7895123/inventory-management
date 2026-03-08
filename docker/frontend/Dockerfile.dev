@@ -1,0 +1,13 @@
+FROM oven/bun:1-alpine
+
+WORKDIR /app
+
+# 先複製 lockfile 利用 Docker layer cache
+# context 為專案根目錄，故使用 frontend/ 前綴
+COPY frontend/package.json frontend/bun.lock* ./
+RUN bun install --frozen-lockfile 2>/dev/null || bun install
+
+EXPOSE 3000
+
+# --host 讓 Docker 外可以存取
+CMD ["bun", "run", "dev"]

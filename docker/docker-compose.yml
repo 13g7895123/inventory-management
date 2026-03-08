@@ -9,11 +9,10 @@ services:
       - "${APP_PORT:-80}:80"
       - "${PMA_PORT:-8080}:8080"
     volumes:
-      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./backend:/var/www/backend:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ../backend:/var/www/backend:ro
     depends_on:
       - php-fpm
-      - nuxt
       - phpmyadmin
     restart: unless-stopped
 
@@ -22,9 +21,10 @@ services:
   # ─────────────────────────────────────────────
   php-fpm:
     build:
-      context: ./docker/php
+      context: ..
+      dockerfile: docker/php/Dockerfile
     volumes:
-      - ./backend:/var/www/backend
+      - ../backend:/var/www/backend
     env_file:
       - .env
     depends_on:
@@ -35,27 +35,13 @@ services:
     restart: unless-stopped
 
   # ─────────────────────────────────────────────
-  # Nuxt — 前端 Dev Server
-  # ─────────────────────────────────────────────
-  nuxt:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile.dev
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    environment:
-      - NUXT_PUBLIC_API_BASE=${NUXT_PUBLIC_API_BASE:-http://localhost/api/v1}
-    restart: unless-stopped
-
-  # ─────────────────────────────────────────────
   # MySQL 8.0
   # ─────────────────────────────────────────────
   mysql:
     image: mysql:8.0
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-secret}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-inventory_db}
