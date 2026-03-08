@@ -6,11 +6,15 @@ namespace Config;
 
 use App\Listeners\LogInventoryTransaction;
 use App\Listeners\SendLowStockAlert;
-use App\Repositories\InventoryRepository;
-use App\Repositories\ItemRepository;
+use App\Libraries\JWT\JWTService;
 use App\Models\InventoryModel;
 use App\Models\InventoryTransactionModel;
 use App\Models\ItemModel;
+use App\Models\RefreshTokenModel;
+use App\Models\UserModel;
+use App\Repositories\InventoryRepository;
+use App\Repositories\ItemRepository;
+use App\Services\AuthService;
 use App\Services\InventoryService;
 use App\Services\ItemService;
 use CodeIgniter\Config\BaseService;
@@ -23,6 +27,30 @@ use CodeIgniter\Config\BaseService;
  */
 class Services extends BaseService
 {
+    // ── Auth ─────────────────────────────────────────────────────────
+
+    public static function jwtService(bool $getShared = true): JWTService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('jwtService');
+        }
+
+        return new JWTService();
+    }
+
+    public static function authService(bool $getShared = true): AuthService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('authService');
+        }
+
+        return new AuthService(
+            new UserModel(),
+            new RefreshTokenModel(),
+            static::jwtService(),
+        );
+    }
+
     // ── Repositories ─────────────────────────────────────────────────
 
     public static function itemRepository(bool $getShared = true): ItemRepository
