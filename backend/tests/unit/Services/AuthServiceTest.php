@@ -50,13 +50,13 @@ class AuthServiceTest extends CIUnitTestCase
     public function testLoginThrowsWhenUserNotFound(): void
     {
         $this->userModel
-            ->method('findActiveByEmail')
+            ->method('findActiveByUsername')
             ->willReturn(null);
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Email 或密碼錯誤');
+        $this->expectExceptionMessage('帳號或密碼錯誤');
 
-        $this->authService->login('notexist@example.com', 'anypass');
+        $this->authService->login('notexist', 'anypass');
     }
 
     public function testLoginThrowsWhenPasswordWrong(): void
@@ -64,20 +64,20 @@ class AuthServiceTest extends CIUnitTestCase
         $user = $this->makeUser();
 
         $this->userModel
-            ->method('findActiveByEmail')
+            ->method('findActiveByUsername')
             ->willReturn($user);
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Email 或密碼錯誤');
+        $this->expectExceptionMessage('帳號或密碼錯誤');
 
-        $this->authService->login('admin@example.com', 'wrongpassword');
+        $this->authService->login('admin', 'wrongpassword');
     }
 
     public function testLoginSuccessReturnsTokens(): void
     {
         $user = $this->makeUser(['password' => password_hash('correct', PASSWORD_BCRYPT)]);
 
-        $this->userModel->method('findActiveByEmail')->willReturn($user);
+        $this->userModel->method('findActiveByUsername')->willReturn($user);
         $this->userModel->method('touchLastLogin')->willReturn(null);
         $this->jwtService->method('generateAccessToken')->willReturn('access-token');
         $this->jwtService->method('generateRefreshToken')->willReturn('refresh-token');
@@ -85,7 +85,7 @@ class AuthServiceTest extends CIUnitTestCase
         $this->jwtService->method('getRefreshTtl')->willReturn(604800);
         $this->refreshTokenModel->method('store')->willReturn(null);
 
-        $result = $this->authService->login('admin@example.com', 'correct');
+        $result = $this->authService->login('admin', 'correct');
 
         $this->assertSame('access-token', $result['access_token']);
         $this->assertSame('refresh-token', $result['refresh_token']);
@@ -149,8 +149,8 @@ class AuthServiceTest extends CIUnitTestCase
         $data = array_merge([
             'id'        => 1,
             'role_id'   => 1,
+            'username'  => 'admin',
             'name'      => 'Test User',
-            'email'     => 'admin@example.com',
             'password'  => password_hash('password', PASSWORD_BCRYPT),
             'is_active' => 1,
         ], $overrides);

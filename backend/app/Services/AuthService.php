@@ -28,12 +28,12 @@ class AuthService
      * @return array{access_token: string, refresh_token: string, expires_in: int, user: array<string, mixed>}
      * @throws \RuntimeException
      */
-    public function login(string $email, string $password): array
+    public function login(string $username, string $password): array
     {
-        $user = $this->userModel->findActiveByEmail($email);
+        $user = $this->userModel->findActiveByUsername($username);
 
         if ($user === null || ! $user->verifyPassword($password)) {
-            throw new \RuntimeException('Email 或密碼錯誤', 401);
+            throw new \RuntimeException('帳號或密碼錯誤', 401);
         }
 
         $this->userModel->touchLastLogin($user->id);
@@ -108,10 +108,10 @@ class AuthService
             'refresh_token' => $refreshToken,
             'expires_in'    => $this->jwtService->getTtl(),
             'user'          => [
-                'id'    => $user->id,
-                'name'  => $user->name,
-                'email' => $user->email,
-                'role'  => $role,
+                'id'       => $user->id,
+                'username' => $user->username,
+                'name'     => $user->name,
+                'role'     => $role,
             ],
         ];
     }

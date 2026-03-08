@@ -35,7 +35,7 @@ class AuthController extends BaseApiController
     public function login(): ResponseInterface
     {
         $rules = [
-            'email'    => 'required|valid_email',
+            'username' => 'required|min_length[3]|max_length[100]',
             'password' => 'required|min_length[1]',
         ];
 
@@ -47,7 +47,7 @@ class AuthController extends BaseApiController
 
         try {
             $tokens = $this->authService->login(
-                trim($body['email'] ?? ''),
+                trim($body['username'] ?? ''),
                 $body['password'] ?? ''
             );
         } catch (\RuntimeException $e) {
@@ -114,10 +114,10 @@ class AuthController extends BaseApiController
         }
 
         return api_success([
-            'id'    => $user->id,
-            'name'  => $user->name,
-            'email' => $user->email,
-            'role'  => $payload->role ?? '',
+            'id'       => $user->id,
+            'username' => $user->username,
+            'name'     => $user->name,
+            'role'     => $payload->role ?? '',
         ]);
     }
 }

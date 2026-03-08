@@ -25,13 +25,14 @@ class CreateUsersTable extends Migration
                 'constraint' => 20,
                 'unsigned' => true,
             ],
+            'username' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 100,
+                'comment'    => '登入帳號',
+            ],
             'name' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 100,
-            ],
-            'email' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 191,
             ],
             'password' => [
                 'type'       => 'VARCHAR',
@@ -53,7 +54,7 @@ class CreateUsersTable extends Migration
         ]);
 
         $this->forge->addPrimaryKey('id');
-        $this->forge->addUniqueKey('email');
+        $this->forge->addUniqueKey('username');
         $this->forge->addKey('role_id');
         $this->forge->addForeignKey('role_id', 'roles', 'id', 'RESTRICT', 'RESTRICT');
         $this->forge->createTable('users');

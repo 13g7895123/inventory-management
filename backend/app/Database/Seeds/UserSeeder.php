@@ -21,8 +21,8 @@ class UserSeeder extends Seeder
         $users = [
             [
                 'role_id'    => $adminRole->id,
+                'username'   => 'admin',
                 'name'       => 'System Administrator',
-                'email'      => 'admin@example.com',
                 'password'   => password_hash('Admin@12345', PASSWORD_BCRYPT),
                 'is_active'  => 1,
                 'created_at' => date('Y-m-d H:i:s'),

@@ -21,23 +21,23 @@ class UserModel extends Model
 
     protected $allowedFields = [
         'role_id',
+        'username',
         'name',
-        'email',
         'password',
         'is_active',
         'last_login_at',
     ];
 
     protected $validationRules = [
+        'username' => 'required|alpha_numeric_punct|min_length[3]|max_length[100]|is_unique[users.username,id,{id}]',
         'name'     => 'required|min_length[2]|max_length[100]',
-        'email'    => 'required|valid_email|max_length[191]|is_unique[users.email,id,{id}]',
         'password' => 'required|min_length[8]',
         'role_id'  => 'required|integer|is_not_unique[roles.id]',
     ];
 
     protected $validationMessages = [
-        'email' => [
-            'is_unique' => '此 Email 已被使用',
+        'username' => [
+            'is_unique' => '此帳號已被使用',
         ],
         'role_id' => [
             'is_not_unique' => '指定的角色不存在',
@@ -45,12 +45,12 @@ class UserModel extends Model
     ];
 
     /**
-     * 以 Email 查找啟用中的使用者（含 role 資訊）
+     * 以帳號查找啟用中的使用者
      */
-    public function findActiveByEmail(string $email): ?User
+    public function findActiveByUsername(string $username): ?User
     {
         return $this
-            ->where('email', $email)
+            ->where('username', $username)
             ->where('is_active', 1)
             ->first();
     }

@@ -33,7 +33,7 @@ class AuthTest extends CIUnitTestCase
     {
         $result = $this->withBodyFormat('json')
             ->post('/api/v1/auth/login', [
-                'email'    => 'admin@example.com',
+                'username' => 'admin',
                 'password' => 'Admin@12345',
             ]);
 
@@ -50,7 +50,7 @@ class AuthTest extends CIUnitTestCase
     {
         $result = $this->withBodyFormat('json')
             ->post('/api/v1/auth/login', [
-                'email'    => 'admin@example.com',
+                'username' => 'admin',
                 'password' => 'wrongpassword',
             ]);
 
@@ -58,11 +58,11 @@ class AuthTest extends CIUnitTestCase
         $result->assertJSONFragment(['success' => false]);
     }
 
-    public function testLoginWithNonExistentEmailReturns401(): void
+    public function testLoginWithNonExistentUserReturns401(): void
     {
         $result = $this->withBodyFormat('json')
             ->post('/api/v1/auth/login', [
-                'email'    => 'nobody@example.com',
+                'username' => 'nobody',
                 'password' => 'anything',
             ]);
 
@@ -73,7 +73,7 @@ class AuthTest extends CIUnitTestCase
     {
         $result = $this->withBodyFormat('json')
             ->post('/api/v1/auth/login', [
-                'email' => 'admin@example.com',
+                'username' => 'admin',
                 // password 缺少
             ]);
 
@@ -107,7 +107,7 @@ class AuthTest extends CIUnitTestCase
         // 先登入取得 token
         $loginResult = $this->withBodyFormat('json')
             ->post('/api/v1/auth/login', [
-                'email'    => 'admin@example.com',
+                'username' => 'admin',
                 'password' => 'Admin@12345',
             ]);
 
@@ -121,6 +121,6 @@ class AuthTest extends CIUnitTestCase
         $result->assertJSONFragment(['success' => true]);
 
         $me = json_decode($result->getBody(), true);
-        $this->assertSame('admin@example.com', $me['data']['email']);
+        $this->assertSame('admin', $me['data']['username']);
     }
 }
