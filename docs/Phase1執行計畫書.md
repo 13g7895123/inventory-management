@@ -90,6 +90,8 @@ backend/
 │   │   ├── Auth.php              # JWT 設定
 │   │   ├── Cors.php              # CORS 白名單設定
 │   │   ├── Database.php
+│   │   ├── Events.php            # 事件與監聽器綁定
+│   │   ├── Services.php          # DI 容器服務綁定
 │   │   └── Routes.php
 │   ├── Controllers/
 │   │   └── Api/
@@ -119,16 +121,34 @@ backend/
 │   ├── Database/
 │   │   ├── Migrations/           # 所有 Migration 檔案
 │   │   └── Seeds/                # 初始資料
+│   ├── Entities/                 # CI4 Entity：資料列物件（含型別轉換與商業屬性）
+│   │   ├── BaseEntity.php        # 共用 Entity 基底
+│   │   ├── Item.php
+│   │   ├── ItemSku.php
+│   │   ├── Inventory.php
+│   │   ├── PurchaseOrder.php
+│   │   └── SalesOrder.php
+│   ├── Events/                   # CI4 Events：業務領域事件（解耦副作用）
+│   │   ├── StockReplenished.php  # 庫存入庫事件（採購驗收後觸發）
+│   │   ├── StockDeducted.php     # 庫存出庫事件（出貨後觸發）
+│   │   ├── PurchaseOrderApproved.php
+│   │   └── SalesOrderConfirmed.php
 │   ├── Filters/
 │   │   ├── AuthFilter.php        # JWT 驗證 Filter
 │   │   ├── CorsFilter.php        # CORS 處理
 │   │   └── RateLimitFilter.php   # API 限速
+│   ├── Helpers/
+│   │   ├── response_helper.php   # 統一 API 回應格式
+│   │   └── number_helper.php
 │   ├── Libraries/
 │   │   ├── JWT/
 │   │   │   └── JWTService.php
 │   │   └── Upload/
 │   │       └── FileUploadService.php
-│   ├── Models/
+│   ├── Listeners/                # 事件監聽器：處理事件的副作用
+│   │   ├── LogInventoryTransaction.php  # 寫入異動日誌
+│   │   └── SendLowStockAlert.php        # 低庫存通知
+│   ├── Models/                   # CI4 Model：資料庫存取層（Query Builder）
 │   │   ├── ItemModel.php
 │   │   ├── ItemSkuModel.php
 │   │   ├── SupplierModel.php
@@ -144,20 +164,25 @@ backend/
 │   │   ├── WarehouseModel.php
 │   │   ├── StocktakeModel.php
 │   │   └── UserModel.php
-│   ├── Services/                 # 業務邏輯層（核心）
+│   ├── Repositories/             # Repository：封裝查詢邏輯，Service 不直接碰 Model
+│   │   ├── Contracts/
+│   │   │   ├── RepositoryInterface.php
+│   │   │   ├── ItemRepositoryInterface.php
+│   │   │   └── InventoryRepositoryInterface.php
+│   │   ├── BaseRepository.php
+│   │   ├── ItemRepository.php
+│   │   └── InventoryRepository.php
+│   ├── Services/                 # Service：業務邏輯核心，協調 Repository 與 Events
 │   │   ├── ItemService.php
 │   │   ├── PurchaseOrderService.php
 │   │   ├── GoodsReceiptService.php
 │   │   ├── SalesOrderService.php
 │   │   ├── ShipmentService.php
-│   │   ├── InventoryService.php  # 庫存異動核心服務
+│   │   ├── InventoryService.php
 │   │   ├── StocktakeService.php
 │   │   └── ReportService.php
-│   ├── Validation/               # 自訂驗證規則
-│   │   └── CustomRules.php
-│   └── Helpers/
-│       ├── response_helper.php   # 統一 API 回應格式
-│       └── number_helper.php
+│   └── Validation/               # 自訂驗證規則
+│       └── CustomRules.php
 ├── tests/
 │   ├── unit/
 │   └── feature/
@@ -170,33 +195,255 @@ backend/
 └── phpunit.xml
 ```
 
-### 2.2 最佳實踐：分層架構
+### 2.2 最佳實踐：完整分層架構
 
-CI4 強制採用 **Controller → Service → Model** 三層分離：
+CI4 採用 **Controller → Service → Repository → Model → Entity** 五層分離，搭配 **Events / Listeners** 解耦副作用：
 
 ```
 HTTP Request
      │
      ▼
-┌─────────────────┐
-│   Controller    │  ← 只負責：請求接收、驗證、回應格式化
-│  (API Layer)    │    不含業務邏輯
-└────────┬────────┘
+┌─────────────────────────────────────────────────┐
+│   Controller  (API Layer)                        │
+│   只負責：請求接收、輸入驗證、回應格式化              │
+│   不含任何業務邏輯                                 │
+└─────────────────┬───────────────────────────────┘
+                  │ 呼叫
+                  ▼
+┌─────────────────────────────────────────────────┐
+│   Service  (Business Layer)                      │
+│   業務邏輯核心：流程控制、DB Transaction、          │
+│   觸發 Events、協調多個 Repository               │
+└────────┬──────────────────────────┬─────────────┘
+         │ 呼叫                      │ 觸發
+         ▼                           ▼
+┌─────────────────┐       ┌─────────────────────┐
+│   Repository    │       │   Events / Listeners │
+│   封裝查詢邏輯   │       │   副作用：日誌、通知、  │
+│   介面與實作分離 │       │   快取失效、佇列任務   │
+└────────┬────────┘       └─────────────────────┘
          │ 呼叫
          ▼
-┌─────────────────┐
-│    Service      │  ← 業務邏輯核心：計算庫存、觸發事件、
-│  (Business)     │    跨 Model 協調、交易管理 (DB Transaction)
-└────────┬────────┘
-         │ 呼叫
-         ▼
-┌─────────────────┐
-│     Model       │  ← 只負責：資料庫 CRUD、查詢建構
-│  (Data Layer)   │    繼承 CI4 Model，使用 Query Builder
-└─────────────────┘
+┌─────────────────────────────────────────────────┐
+│   Model  (Data Layer)                            │
+│   CI4 Model：資料庫 CRUD、Query Builder           │
+│   定義 returnType = Entity 類別                   │
+└─────────────────┬───────────────────────────────┘
+                  │ 回傳
+                  ▼
+┌─────────────────────────────────────────────────┐
+│   Entity  (Data Object)                          │
+│   代表一筆資料列；型別轉換（cast）、              │
+│   唯讀計算屬性（virtual field）                   │
+└─────────────────────────────────────────────────┘
 ```
 
-**範例 — InventoryService（庫存扣減）：**
+**各層職責說明：**
+
+| 層級 | 職責 | CI4 對應 |
+|------|------|----------|
+| **Controller** | 接收請求、驗證格式、呼叫 Service、回傳 JSON | `app/Controllers/` |
+| **Service** | 業務流程、DB Transaction、觸發事件 | `app/Services/`（手工類別） |
+| **Repository** | 封裝查詢邏輯，提供語意化方法；介面與實作分離 | `app/Repositories/` |
+| **Model** | CI4 Query Builder 存取層，設定 Entity 回傳型別 | `app/Models/` |
+| **Entity** | 強型別資料物件；`$casts` 型別轉換；計算屬性 | `app/Entities/`，繼承 `CodeIgniter\Entity\Entity` |
+| **Events** | 業務領域事件物件（純資料結構） | `app/Events/`，搭配 `Events::trigger()` |
+| **Listeners** | 響應事件的副作用處理（日誌、通知等） | `app/Listeners/`，綁定於 `app/Config/Events.php` |
+
+---
+
+**範例 — Entity（Inventory.php）：**
+
+```php
+// app/Entities/Inventory.php
+<?php
+
+namespace App\Entities;
+
+use CodeIgniter\Entity\Entity;
+
+class Inventory extends Entity
+{
+    protected $casts = [
+        'id'            => 'integer',
+        'sku_id'        => 'integer',
+        'warehouse_id'  => 'integer',
+        'on_hand_qty'   => 'float',
+        'reserved_qty'  => 'float',
+        'on_order_qty'  => 'float',
+        'avg_cost'      => 'float',
+    ];
+
+    /**
+     * 可用庫存（計算屬性）= 在庫 − 預留
+     */
+    public function getAvailableQty(): float
+    {
+        return $this->on_hand_qty - $this->reserved_qty;
+    }
+
+    /**
+     * 是否低於安全庫存
+     */
+    public function isBelowSafetyStock(float $safetyStock): bool
+    {
+        return $this->getAvailableQty() < $safetyStock;
+    }
+}
+```
+
+---
+
+**範例 — Repository Interface + 實作（InventoryRepository.php）：**
+
+```php
+// app/Repositories/Contracts/InventoryRepositoryInterface.php
+<?php
+
+namespace App\Repositories\Contracts;
+
+use App\Entities\Inventory;
+
+interface InventoryRepositoryInterface
+{
+    public function findBySkuAndWarehouse(int $skuId, int $warehouseId): ?Inventory;
+    public function lockForUpdate(int $skuId, int $warehouseId): ?Inventory;
+    public function updateQuantities(int $id, float $onHandQty, float $reservedQty): bool;
+    public function findLowStock(float $threshold): array;
+}
+```
+
+```php
+// app/Repositories/InventoryRepository.php
+<?php
+
+namespace App\Repositories;
+
+use App\Entities\Inventory;
+use App\Models\InventoryModel;
+use App\Repositories\Contracts\InventoryRepositoryInterface;
+
+class InventoryRepository extends BaseRepository implements InventoryRepositoryInterface
+{
+    public function __construct(private readonly InventoryModel $model) {}
+
+    public function findBySkuAndWarehouse(int $skuId, int $warehouseId): ?Inventory
+    {
+        return $this->model
+            ->where('sku_id', $skuId)
+            ->where('warehouse_id', $warehouseId)
+            ->first();
+    }
+
+    public function lockForUpdate(int $skuId, int $warehouseId): ?Inventory
+    {
+        return $this->model
+            ->where('sku_id', $skuId)
+            ->where('warehouse_id', $warehouseId)
+            ->lockForUpdate()
+            ->first();
+    }
+
+    public function updateQuantities(int $id, float $onHandQty, float $reservedQty): bool
+    {
+        return $this->model->update($id, [
+            'on_hand_qty'  => $onHandQty,
+            'reserved_qty' => $reservedQty,
+        ]);
+    }
+
+    public function findLowStock(float $threshold): array
+    {
+        return $this->model
+            ->where('(on_hand_qty - reserved_qty) <', $threshold)
+            ->findAll();
+    }
+}
+```
+
+---
+
+**範例 — Events + Listeners：**
+
+```php
+// app/Events/StockDeducted.php
+<?php
+
+namespace App\Events;
+
+/**
+ * 庫存出庫事件（出貨後由 InventoryService 觸發）
+ */
+readonly class StockDeducted
+{
+    public function __construct(
+        public int    $skuId,
+        public int    $warehouseId,
+        public float  $quantity,
+        public string $sourceType,
+        public int    $sourceId,
+        public int    $operatorId,
+    ) {}
+}
+```
+
+```php
+// app/Config/Events.php — 綁定事件與監聽器
+<?php
+
+namespace Config;
+
+use App\Events\StockDeducted;
+use App\Events\StockReplenished;
+use App\Listeners\LogInventoryTransaction;
+use App\Listeners\SendLowStockAlert;
+use CodeIgniter\Events\Events;
+
+Events::on(StockDeducted::class, [LogInventoryTransaction::class, 'handle']);
+Events::on(StockDeducted::class, [SendLowStockAlert::class, 'handle']);
+Events::on(StockReplenished::class, [LogInventoryTransaction::class, 'handle']);
+```
+
+```php
+// app/Listeners/SendLowStockAlert.php
+<?php
+
+namespace App\Listeners;
+
+use App\Events\StockDeducted;
+use App\Repositories\Contracts\InventoryRepositoryInterface;
+
+class SendLowStockAlert
+{
+    public function __construct(
+        private readonly InventoryRepositoryInterface $inventoryRepo
+    ) {}
+
+    public function handle(StockDeducted $event): void
+    {
+        $inventory = $this->inventoryRepo->findBySkuAndWarehouse(
+            $event->skuId,
+            $event->warehouseId
+        );
+
+        if ($inventory === null) {
+            return;
+        }
+
+        // TODO: 以實際安全庫存值替換（從 item_skus 取得）
+        $safetyStock = 10.0;
+
+        if ($inventory->isBelowSafetyStock($safetyStock)) {
+            // 發送低庫存通知（Email / Webhook / Redis Queue）
+            log_message('warning', "低庫存警示：SKU {$event->skuId} 倉庫 {$event->warehouseId} 可用庫存 {$inventory->getAvailableQty()}");
+        }
+    }
+}
+```
+
+---
+
+**範例 — Service 整合所有層（InventoryService）：**
 
 ```php
 // app/Services/InventoryService.php
@@ -204,15 +451,16 @@ HTTP Request
 
 namespace App\Services;
 
-use App\Models\InventoryModel;
+use App\Events\StockDeducted;
 use App\Models\InventoryTransactionModel;
-use CodeIgniter\Database\Exceptions\DatabaseException;
+use App\Repositories\Contracts\InventoryRepositoryInterface;
+use CodeIgniter\Events\Events;
 
 class InventoryService
 {
     public function __construct(
-        private readonly InventoryModel $inventoryModel,
-        private readonly InventoryTransactionModel $txModel
+        private readonly InventoryRepositoryInterface $inventoryRepo,
+        private readonly InventoryTransactionModel    $txModel,
     ) {}
 
     /**
@@ -221,50 +469,82 @@ class InventoryService
      * @throws \RuntimeException 庫存不足時拋出
      */
     public function deductStock(
-        int $skuId,
-        int $warehouseId,
-        float $quantity,
+        int    $skuId,
+        int    $warehouseId,
+        float  $quantity,
         string $sourceType,
-        int $sourceId,
-        int $operatorId
+        int    $sourceId,
+        int    $operatorId
     ): void {
         $db = db_connect();
         $db->transStart();
 
         try {
-            $inventory = $this->inventoryModel
-                ->where('sku_id', $skuId)
-                ->where('warehouse_id', $warehouseId)
-                ->lockForUpdate()  // SELECT FOR UPDATE 防止 race condition
-                ->first();
+            $inventory = $this->inventoryRepo->lockForUpdate($skuId, $warehouseId);
 
-            if (!$inventory || $inventory->available_qty < $quantity) {
+            if ($inventory === null || $inventory->getAvailableQty() < $quantity) {
                 throw new \RuntimeException('庫存不足，無法出庫');
             }
 
-            // 更新庫存數量
-            $this->inventoryModel->update($inventory->id, [
-                'on_hand_qty'  => $inventory->on_hand_qty - $quantity,
-                'reserved_qty' => $inventory->reserved_qty - $quantity,
-            ]);
-
-            // 寫入庫存異動日誌（永不刪除）
-            $this->txModel->insert([
-                'sku_id'               => $skuId,
-                'warehouse_id'         => $warehouseId,
-                'transaction_type'     => 'OUT',
-                'quantity'             => -$quantity,
-                'source_document_type' => $sourceType,
-                'source_document_id'   => $sourceId,
-                'performed_by'         => $operatorId,
-                'performed_at'         => date('Y-m-d H:i:s'),
-            ]);
+            $this->inventoryRepo->updateQuantities(
+                $inventory->id,
+                $inventory->on_hand_qty - $quantity,
+                $inventory->reserved_qty - $quantity,
+            );
 
             $db->transComplete();
         } catch (\Throwable $e) {
             $db->transRollback();
             throw $e;
         }
+
+        // Transaction 完成後才觸發事件（Listener 負責寫日誌與通知）
+        Events::trigger(StockDeducted::class, new StockDeducted(
+            skuId:       $skuId,
+            warehouseId: $warehouseId,
+            quantity:    $quantity,
+            sourceType:  $sourceType,
+            sourceId:    $sourceId,
+            operatorId:  $operatorId,
+        ));
+    }
+}
+```
+
+---
+
+**Repository 的 DI 綁定（app/Config/Services.php）：**
+
+```php
+// app/Config/Services.php
+<?php
+
+namespace Config;
+
+use App\Models\InventoryModel;
+use App\Models\ItemModel;
+use App\Repositories\InventoryRepository;
+use App\Repositories\ItemRepository;
+use App\Repositories\Contracts\InventoryRepositoryInterface;
+use App\Repositories\Contracts\ItemRepositoryInterface;
+use CodeIgniter\Config\BaseService;
+
+class Services extends BaseService
+{
+    public static function inventoryRepository(bool $getShared = true): InventoryRepositoryInterface
+    {
+        if ($getShared) {
+            return static::getSharedInstance('inventoryRepository');
+        }
+        return new InventoryRepository(new InventoryModel());
+    }
+
+    public static function itemRepository(bool $getShared = true): ItemRepositoryInterface
+    {
+        if ($getShared) {
+            return static::getSharedInstance('itemRepository');
+        }
+        return new ItemRepository(new ItemModel());
     }
 }
 ```
@@ -1115,82 +1395,93 @@ class CreateItemsTable extends Migration
 ### 6.1 Docker Compose 開發環境
 
 ```yaml
-# docker-compose.yml
-version: '3.9'
-
+# docker/docker-compose.yml（development — 僅後端）
 services:
   nginx:
     image: nginx:1.25-alpine
     ports:
-      - "80:80"
-      - "443:443"
+      - "${APP_PORT:-80}:80"
+      - "${PMA_PORT:-8080}:8080"
     volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d
-      - ./backend:/var/www/backend
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ../backend:/var/www/backend:ro
     depends_on:
       - php-fpm
-      - nuxt
+      - phpmyadmin
 
   php-fpm:
     build:
-      context: ./docker/php
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: docker/php/Dockerfile
     volumes:
-      - ./backend:/var/www/backend
-    environment:
-      - PHP_INI_SCAN_DIR=/usr/local/etc/php/conf.d
+      - ../backend:/var/www/backend
+    env_file:
+      - .env
     depends_on:
-      - mysql
-      - redis
-
-  nuxt:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile.dev
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    ports:
-      - "3000:3000"
-    environment:
-      - NUXT_PUBLIC_API_BASE=http://localhost/api/v1
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   mysql:
     image: mysql:8.0
-    ports:
-      - "3306:3306"
-    environment:
-      MYSQL_ROOT_PASSWORD: secret
-      MYSQL_DATABASE: inventory_db
-      MYSQL_USER: app
-      MYSQL_PASSWORD: secret
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
 
   minio:
     image: minio/minio:latest
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    command: server /data --console-address ":9001"
 
 volumes:
   mysql_data:
   redis_data:
   minio_data:
+```
+
+```yaml
+# docker/docker-compose.prod.yml（production 疊加 — 含 nuxt）
+services:
+  nuxt:
+    build:
+      context: ..
+      dockerfile: docker/frontend/Dockerfile.dev
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    environment:
+      - NUXT_PUBLIC_API_BASE=${NUXT_PUBLIC_API_BASE}
+
+  nginx:
+    depends_on:
+      - nuxt
+```
+
+**啟動方式（透過 deploy.sh）：**
+
+```bash
+./scripts/deploy.sh development   # 僅啟動後端（nginx, php-fpm, mysql, redis, minio）
+./scripts/deploy.sh production    # 後端 + nuxt
 ```
 
 ### 6.2 開發工具建議
@@ -1213,21 +1504,44 @@ volumes:
 ```
 09_inventory-management/
 ├── backend/                    # CodeIgniter 4 後端
+│   └── app/
+│       ├── Config/             # 設定（Routes, Events, Services, ...）
+│       ├── Controllers/        # API 控制器
+│       ├── Entities/           # CI4 Entity（強型別資料列物件）
+│       ├── Events/             # 業務領域事件
+│       ├── Filters/            # HTTP Filter（Auth, CORS, RateLimit）
+│       ├── Helpers/            # 全域 Helper 函式
+│       ├── Libraries/          # 第三方包裝（JWT, Upload）
+│       ├── Listeners/          # 事件監聽器
+│       ├── Models/             # CI4 Model（Query Builder）
+│       ├── Repositories/       # Repository 介面與實作
+│       │   └── Contracts/      # Interface 定義
+│       ├── Services/           # 業務邏輯服務層
+│       └── Validation/         # 自訂驗證規則
 ├── frontend/                   # Nuxt 3 前端
 ├── docker/
+│   ├── docker-compose.yml      # 共用後端服務（development 預設）
+│   ├── docker-compose.prod.yml # 疊加 nuxt（production 專用）
+│   ├── envs/
+│   │   ├── .env.example
+│   │   ├── .env.development
+│   │   └── .env.production
 │   ├── php/
-│   │   └── Dockerfile
+│   │   ├── Dockerfile
+│   │   └── php.ini
+│   ├── frontend/
+│   │   └── Dockerfile.dev
 │   ├── mysql/
 │   │   └── init.sql
 │   └── nginx/
 │       └── conf.d/
-│           ├── api.conf        # CI4 API 虛擬主機設定
-│           └── app.conf        # Nuxt 靜態/SSR 設定
-├── docker-compose.yml
-├── docker-compose.prod.yml
-├── .env.example
-├── Phase1執行計畫書.md
-└── 進銷存系統需求規格書.md
+│           └── default.conf
+├── scripts/
+│   └── deploy.sh               # 部署腳本（./scripts/deploy.sh production）
+├── docs/
+│   ├── Phase1執行計畫書.md
+│   └── 進銷存系統需求規格書.md
+└── .gitignore
 ```
 
 ---
@@ -1725,26 +2039,23 @@ php spark serve
 
 ```bash
 cd frontend
-cp .env.example .env
-pnpm install
-pnpm dev
+cp ../docker/envs/.env.example .env
+bun install
+bun run dev
 ```
 
 ### Docker 一鍵啟動
 
 ```bash
-# 複製環境設定
-cp .env.example .env
-
-# 啟動所有服務
-docker compose up -d
+# 啟動開發環境（後端服務）
+./scripts/deploy.sh development
 
 # 執行 Migration
-docker compose exec php-fpm php spark migrate --all
-docker compose exec php-fpm php spark db:seed DatabaseSeeder
+docker compose --project-directory docker exec php-fpm php spark migrate --all
+docker compose --project-directory docker exec php-fpm php spark db:seed DatabaseSeeder
 
 # 查看 Log
-docker compose logs -f php-fpm
+docker compose --project-directory docker logs -f php-fpm
 ```
 
 ### 後端測試
@@ -1760,9 +2071,9 @@ composer cs-check      # 檢查程式碼風格
 
 ```bash
 cd frontend
-pnpm test              # Vitest
-pnpm type-check        # vue-tsc 型別檢查
-pnpm lint              # ESLint
+bun run test           # Vitest
+bun run type-check     # vue-tsc 型別檢查
+bun run lint           # ESLint
 ```
 
 ---
