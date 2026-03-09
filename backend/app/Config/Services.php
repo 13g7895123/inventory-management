@@ -8,25 +8,37 @@ use App\Listeners\LogInventoryTransaction;
 use App\Listeners\SendLowStockAlert;
 use App\Libraries\JWT\JWTService;
 use App\Libraries\ImageUploadService;
+use App\Models\BatchSerialModel;
 use App\Models\CategoryModel;
+use App\Models\GoodsReceiptLineModel;
+use App\Models\GoodsReceiptModel;
 use App\Models\InventoryModel;
 use App\Models\InventoryTransactionModel;
 use App\Models\ItemModel;
 use App\Models\ItemSkuModel;
+use App\Models\PurchaseOrderLineModel;
+use App\Models\PurchaseOrderModel;
 use App\Models\RefreshTokenModel;
+use App\Models\SupplierModel;
 use App\Models\UnitModel;
 use App\Models\UserModel;
 use App\Repositories\CategoryRepository;
 use App\Repositories\InventoryRepository;
 use App\Repositories\ItemRepository;
+use App\Repositories\PurchaseOrderRepository;
 use App\Repositories\SkuRepository;
+use App\Repositories\SupplierRepository;
 use App\Repositories\UnitRepository;
 use App\Services\AuthService;
 use App\Services\CategoryService;
+use App\Services\GoodsReceiptService;
 use App\Services\ImportService;
 use App\Services\InventoryService;
 use App\Services\ItemService;
+use App\Services\PurchaseOrderPdfService;
+use App\Services\PurchaseOrderService;
 use App\Services\SkuService;
+use App\Services\SupplierService;
 use App\Services\UnitService;
 use CodeIgniter\Config\BaseService;
 
@@ -182,6 +194,77 @@ class Services extends BaseService
         }
 
         return new ImageUploadService();
+    }
+
+    // ── Sprint 5: 採購管理 ──────────────────────────────────────────
+
+    public static function supplierRepository(bool $getShared = true): SupplierRepository
+    {
+        if ($getShared) {
+            return static::getSharedInstance('supplierRepository');
+        }
+
+        return new SupplierRepository(new SupplierModel());
+    }
+
+    public static function purchaseOrderRepository(bool $getShared = true): PurchaseOrderRepository
+    {
+        if ($getShared) {
+            return static::getSharedInstance('purchaseOrderRepository');
+        }
+
+        return new PurchaseOrderRepository(
+            new PurchaseOrderModel(),
+            new PurchaseOrderLineModel(),
+        );
+    }
+
+    public static function supplierService(bool $getShared = true): SupplierService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('supplierService');
+        }
+
+        return new SupplierService(static::supplierRepository());
+    }
+
+    public static function purchaseOrderService(bool $getShared = true): PurchaseOrderService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('purchaseOrderService');
+        }
+
+        return new PurchaseOrderService(
+            static::purchaseOrderRepository(),
+            static::supplierRepository(),
+        );
+    }
+
+    public static function goodsReceiptService(bool $getShared = true): GoodsReceiptService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('goodsReceiptService');
+        }
+
+        return new GoodsReceiptService(
+            static::purchaseOrderRepository(),
+            static::inventoryService(),
+            new GoodsReceiptModel(),
+            new GoodsReceiptLineModel(),
+            new BatchSerialModel(),
+        );
+    }
+
+    public static function purchaseOrderPdfService(bool $getShared = true): PurchaseOrderPdfService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('purchaseOrderPdfService');
+        }
+
+        return new PurchaseOrderPdfService(
+            static::purchaseOrderRepository(),
+            static::supplierRepository(),
+        );
     }
 
     // ── Listeners ────────────────────────────────────────────────────

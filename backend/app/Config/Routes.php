@@ -54,6 +54,7 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], static funct
         $routes->post('purchase-orders/(:num)/approve',  'Purchase\PurchaseOrderController::approve/$1');
         $routes->post('purchase-orders/(:num)/cancel',   'Purchase\PurchaseOrderController::cancel/$1');
         $routes->post('purchase-orders/(:num)/receive',  'Purchase\PurchaseOrderController::receive/$1');
+        $routes->get('purchase-orders/(:num)/pdf',       'Purchase\PurchaseOrderController::pdf/$1');
 
         // ── 銷售管理 ──────────────────────────────────────
         $routes->get('sales-orders',                   'Sales\SalesOrderController::index');
@@ -82,8 +83,10 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], static funct
         $routes->put('units/(:num)',    'Master\UnitController::update/$1');
         $routes->delete('units/(:num)', 'Master\UnitController::remove/$1');
 
-        $routes->get('suppliers',   'Master\SupplierController::index');
-        $routes->post('suppliers',  'Master\SupplierController::create');
+        $routes->get('suppliers',           'Master\SupplierController::index');
+        $routes->post('suppliers',          'Master\SupplierController::create');
+        $routes->get('suppliers/(:num)',    'Master\SupplierController::show/$1');
+        $routes->put('suppliers/(:num)',    'Master\SupplierController::update/$1');
 
         // ── 報表 ──────────────────────────────────────────
         $routes->get('reports/inventory-valuation', 'Report\ReportController::inventoryValuation');

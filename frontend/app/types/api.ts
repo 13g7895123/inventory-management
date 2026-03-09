@@ -103,28 +103,115 @@ export interface Inventory {
   warehouse_name?: string
 }
 
+// ── 供應商 ────────────────────────────────────────────────────────
+
+export interface Supplier {
+  id: number
+  code: string
+  name: string
+  contact_name: string | null
+  contact_phone: string | null
+  contact_email: string | null
+  address: string | null
+  tax_id: string | null
+  payment_terms: string | null
+  lead_time_days: number
+  is_active: boolean
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+// ── 採購單 ────────────────────────────────────────────────────────
+
+export type PurchaseOrderStatus = 'draft' | 'pending' | 'approved' | 'partial' | 'received' | 'cancelled'
+
 export interface PurchaseOrder {
   id: number
   po_number: string
   supplier_id: number
-  status: 'DRAFT' | 'PENDING' | 'APPROVED' | 'PARTIAL' | 'RECEIVED' | 'CANCELLED'
-  expected_arrival_date: string
+  warehouse_id: number
+  status: PurchaseOrderStatus
+  subtotal: number
+  tax_rate: number
+  tax_amount: number
   total_amount: number
-  created_by: number
+  expected_date: string | null
+  notes: string | null
   approved_by: number | null
+  approved_at: string | null
+  created_by: number
+  created_at: string
+  updated_at: string
+  // 關聯欄位（後端可能附帶）
   supplier_name?: string
-  line_items?: PurchaseOrderLine[]
+  lines?: PurchaseOrderLine[]
 }
 
 export interface PurchaseOrderLine {
   id: number
-  po_id: number
+  purchase_order_id: number
   sku_id: number
   ordered_qty: number
   received_qty: number
   unit_price: number
+  line_total: number
+  notes: string | null
+  // 關聯欄位
   sku_code?: string
   item_name?: string
+}
+
+// 採購單建立表單中的明細
+export interface PurchaseOrderLineForm {
+  sku_id: number
+  ordered_qty: number
+  unit_price: number
+  notes?: string
+  // 顯示用
+  sku_code?: string
+  item_name?: string
+}
+
+// ── 進貨驗收 ──────────────────────────────────────────────────────
+
+export interface GoodsReceipt {
+  id: number
+  gr_number: string
+  purchase_order_id: number
+  warehouse_id: number
+  received_by: number
+  received_at: string
+  notes: string | null
+  created_at: string
+}
+
+export interface GoodsReceiptLine {
+  id: number
+  goods_receipt_id: number
+  purchase_order_line_id: number
+  sku_id: number
+  received_qty: number
+  unit_cost: number
+  batch_number: string | null
+  expiry_date: string | null
+  notes: string | null
+}
+
+// 驗收表單中的明細
+export interface ReceiveLineForm {
+  line_id: number
+  received_qty: number
+  unit_cost?: number
+  batch_number?: string
+  expiry_date?: string
+  notes?: string
+  // 顯示用
+  sku_id?: number
+  sku_code?: string
+  item_name?: string
+  ordered_qty?: number
+  already_received?: number
 }
 
 export interface SalesOrder {
