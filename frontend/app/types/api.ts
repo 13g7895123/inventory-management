@@ -521,6 +521,121 @@ export interface SalesReturnLineForm {
   pending_return_qty?: number
 }
 
+// ── 倉庫 ──────────────────────────────────────────────────────────
+
+export interface Warehouse {
+  id: number
+  name: string
+  code: string
+  location: string | null
+  is_active: boolean
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+// ── 庫存異動日誌 ──────────────────────────────────────────────────
+
+export type InventoryTxType = 'DEDUCT' | 'REPLENISH' | 'ADJUST' | 'TRANSFER_IN' | 'TRANSFER_OUT'
+
+export interface InventoryTransaction {
+  id: number
+  sku_id: number
+  warehouse_id: number
+  tx_type: InventoryTxType
+  qty_change: number
+  qty_after: number
+  unit_cost: number | null
+  source_type: string | null
+  source_id: number | null
+  operator_id: number | null
+  note: string | null
+  occurred_at: string
+  created_at: string
+  // 關聯欄位
+  sku_code?: string
+  item_name?: string
+  warehouse_name?: string
+}
+
+// ── 庫存調撥 ──────────────────────────────────────────────────────
+
+export type StockTransferStatus = 'draft' | 'confirmed' | 'cancelled'
+
+export interface StockTransfer {
+  id: number
+  transfer_number: string
+  from_warehouse_id: number
+  to_warehouse_id: number
+  status: StockTransferStatus
+  reason: string | null
+  notes: string | null
+  created_by: number
+  confirmed_by: number | null
+  confirmed_at: string | null
+  created_at: string
+  updated_at: string
+  // 關聯欄位
+  from_warehouse_name?: string
+  to_warehouse_name?: string
+}
+
+export interface StockTransferLine {
+  id: number
+  stock_transfer_id: number
+  sku_id: number
+  qty: number
+  batch_number: string | null
+  notes: string | null
+  // 關聯欄位
+  sku_code?: string
+  item_name?: string
+}
+
+export interface StockTransferLineForm {
+  sku_id: number
+  qty: number
+  batch_number?: string
+  notes?: string
+  // 顯示用
+  sku_code?: string
+  item_name?: string
+}
+
+// ── 盤點 ──────────────────────────────────────────────────────────
+
+export type StocktakeStatus = 'draft' | 'in_progress' | 'confirmed' | 'cancelled'
+
+export interface Stocktake {
+  id: number
+  stocktake_number: string
+  warehouse_id: number
+  status: StocktakeStatus
+  notes: string | null
+  created_by: number
+  confirmed_by: number | null
+  confirmed_at: string | null
+  created_at: string
+  updated_at: string
+  // 關聯欄位
+  warehouse_name?: string
+}
+
+export interface StocktakeLine {
+  id: number
+  stocktake_id: number
+  sku_id: number
+  system_qty: number
+  actual_qty: number | null
+  difference_qty: number | null
+  batch_number: string | null
+  notes: string | null
+  counted_at: string | null
+  // 關聯欄位
+  sku_code?: string
+  item_name?: string
+}
+
 export interface AuthTokens {
   access_token: string
   refresh_token: string

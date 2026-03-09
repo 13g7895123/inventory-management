@@ -15,7 +15,17 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: '儀表板',   icon: 'LayoutDashboard', to: '/' },
   { label: '商品管理', icon: 'Package',          to: '/items' },
-  { label: '庫存管理', icon: 'Boxes',            to: '/inventory' },
+  {
+    label: '庫存管理',
+    icon:  'Boxes',
+    to:    '/inventory',
+    children: [
+      { label: '庫存查詢',   icon: 'Search',      to: '/inventory' },
+      { label: '庫存異動日誌', icon: 'History',   to: '/inventory/transactions' },
+      { label: '庫存調撥',   icon: 'ArrowLeftRight', to: '/inventory/transfers' },
+      { label: '盤點管理',   icon: 'ClipboardList', to: '/inventory/stocktakes' },
+    ],
+  },
   {
     label: '採購管理',
     icon:  'ShoppingCart',
