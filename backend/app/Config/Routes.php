@@ -142,8 +142,15 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], static funct
         $routes->put('suppliers/(:num)',    'Master\SupplierController::update/$1');
 
         // ── 報表 ──────────────────────────────────────────
-        $routes->get('reports/inventory-valuation', 'Report\ReportController::inventoryValuation');
-        $routes->get('reports/stock-movement',      'Report\ReportController::stockMovement');
-        $routes->get('reports/turnover-rate',       'Report\ReportController::turnoverRate');
+        $routes->get('reports/dashboard-kpi',                   'Report\ReportController::dashboardKpi');
+        $routes->get('reports/sales-trend',                     'Report\ReportController::salesTrend');
+        $routes->get('reports/inventory-summary',               'Report\ReportController::inventorySummary');
+        $routes->get('reports/inventory-summary/export',        'Report\ReportController::exportInventorySummary');
+        $routes->get('reports/sales',                           'Report\ReportController::salesReport');
+        $routes->get('reports/sales/export',                    'Report\ReportController::exportSalesReport');
+        $routes->get('reports/purchase',                        'Report\ReportController::purchaseReport');
+        $routes->get('reports/purchase/export',                 'Report\ReportController::exportPurchaseReport');
+        $routes->get('reports/profit',                          'Report\ReportController::profitReport');
+        $routes->get('reports/turnover-rate',                   'Report\ReportController::turnoverRate');
     });
 });

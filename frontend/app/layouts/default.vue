@@ -55,7 +55,18 @@ const navItems: NavItem[] = [
     ],
   },
   { label: '倉庫管理', icon: 'Warehouse',  to: '/warehouses' },
-  { label: '報表中心', icon: 'BarChart2',  to: '/reports' },
+  {
+    label: '報表中心',
+    icon:  'BarChart2',
+    to:    '/reports',
+    children: [
+      { label: '進銷存彙總', icon: 'Table',         to: '/reports/inventory-summary' },
+      { label: '銷售業績',   icon: 'TrendingUp',    to: '/reports/sales' },
+      { label: '毛利分析',   icon: 'PieChart',      to: '/reports/profit' },
+      { label: '採購報表',   icon: 'ShoppingCart',  to: '/reports/purchase' },
+      { label: '庫存週轉率', icon: 'RefreshCcw',    to: '/reports/turnover' },
+    ],
+  },
   {
     label: '基礎資料',
     icon:  'Settings',

@@ -676,3 +676,150 @@ export interface BatchSerial {
   item_name?: string
   warehouse_name?: string
 }
+
+// ── 報表 ──────────────────────────────────────────────────────────
+
+/** 儀表板 KPI 彙整 */
+export interface DashboardKpi {
+  pending_sales_orders: number
+  pending_purchase_orders: number
+  low_stock_count: number
+  monthly_sales_amount: number
+  monthly_purchase_amount: number
+  monthly_sales_orders: number
+}
+
+/** 每日銷售趨勢單筆 */
+export interface SalesTrendItem {
+  date: string
+  amount: number
+  order_count: number
+}
+
+/** 進銷存彙總報表單筆 */
+export interface InventorySummaryItem {
+  sku_id: number
+  sku_code: string
+  item_name: string
+  warehouse_id: number
+  warehouse_name: string
+  opening_qty: number
+  in_qty: number
+  out_qty: number
+  adjust_qty: number
+  closing_qty: number
+  avg_cost: number
+  closing_value: number
+}
+
+/** 進銷存彙總報表回應 */
+export interface InventorySummaryReport {
+  items: InventorySummaryItem[]
+  summary: {
+    total_opening_value: number
+    total_closing_value: number
+  }
+}
+
+/** 銷售業績報表（依 SKU） */
+export interface SalesReportSkuItem {
+  sku_id: number
+  sku_code: string
+  item_name: string
+  total_qty: number
+  total_amount: number
+  order_count: number
+}
+
+/** 銷售業績報表（依客戶） */
+export interface SalesReportCustomerItem {
+  customer_id: number
+  customer_name: string
+  order_count: number
+  total_amount: number
+}
+
+/** 銷售業績報表回應 */
+export interface SalesReport {
+  by_sku: SalesReportSkuItem[]
+  by_customer: SalesReportCustomerItem[]
+  summary: {
+    total_revenue: number
+    total_orders: number
+  }
+}
+
+/** 毛利分析：每日 */
+export interface ProfitDailyItem {
+  date: string
+  revenue: number
+  cogs: number
+  gross_profit: number
+  gross_margin: number
+}
+
+/** 毛利分析：依 SKU */
+export interface ProfitSkuItem {
+  sku_id: number
+  sku_code: string
+  item_name: string
+  sold_qty: number
+  revenue: number
+  cogs: number
+  gross_profit: number
+  gross_margin: number
+}
+
+/** 毛利分析報表回應 */
+export interface ProfitReport {
+  daily: ProfitDailyItem[]
+  by_sku: ProfitSkuItem[]
+  summary: {
+    total_revenue: number
+    total_cogs: number
+    gross_profit: number
+    gross_margin: number
+  }
+}
+
+/** 採購報表（依廠商） */
+export interface PurchaseReportSupplierItem {
+  supplier_id: number
+  supplier_name: string
+  order_count: number
+  total_amount: number
+  paid_amount: number
+}
+
+/** 採購報表（依品項） */
+export interface PurchaseReportItemItem {
+  sku_id: number
+  sku_code: string
+  item_name: string
+  total_ordered_qty: number
+  total_received_qty: number
+  total_amount: number
+}
+
+/** 採購報表回應 */
+export interface PurchaseReport {
+  by_supplier: PurchaseReportSupplierItem[]
+  by_item: PurchaseReportItemItem[]
+  summary: {
+    total_purchase: number
+    total_orders: number
+  }
+}
+
+/** 庫存週轉率單筆 */
+export interface TurnoverRateItem {
+  sku_id: number
+  sku_code: string
+  item_name: string
+  warehouse_id: number
+  warehouse_name: string
+  cogs: number
+  current_value: number
+  turnover_rate: number | null
+  days_turnover: number | null
+}
