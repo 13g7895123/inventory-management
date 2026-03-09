@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PurchaseOrderStatus } from '~/app/types/api'
+import type { PurchasePaymentForm } from '~/app/types/api'
 
 definePageMeta({ layout: 'default' })
 
@@ -8,7 +8,17 @@ const router   = useRouter()
 const poStore  = usePurchaseOrderStore()
 const id       = computed(() => Number(route.params.id))
 
-onMounted(() => poStore.fetchOne(id.value))
+onMounted(async () => {
+  await poStore.fetchOne(id.value)
+  // 載入付款與退貨記錄（有相關狀態才需要）
+  const st = poStore.current?.status
+  if (st && st !== 'draft' && st !== 'cancelled') {
+    await Promise.all([
+      poStore.fetchPayments(id.value),
+      poStore.fetchReturns(id.value),
+    ])
+  }
+})
 
 // ── 狀態顯示 ─────────────────────────────────────────────────────────
 const statusLabels: Record<string, string> = {
@@ -44,7 +54,88 @@ function fmt(val: number | string | null) {
   return Number(val).toLocaleString('zh-TW', { minimumFractionDigits: 0 })
 }
 
-// ── 操作 ─────────────────────────────────────────────────────────────
+// ── 付款狀態顯示 ──────────────────────────────────────────────────────
+const paymentStatusLabels: Record<string, string> = {
+  unpaid:  '未付款',
+  partial: '部分付款',
+  paid:    '已付清',
+}
+const paymentStatusClasses: Record<string, string> = {
+  unpaid:  'bg-red-100 text-red-700',
+  partial: 'bg-yellow-100 text-yellow-700',
+  paid:    'bg-green-100 text-green-700',
+}
+const paymentMethodLabels: Record<string, string> = {
+  bank_transfer: '銀行轉帳',
+  cash:          '現金',
+  check:         '支票',
+  other:         '其他',
+}
+
+// ── 新增付款 dialog ───────────────────────────────────────────────────
+const showPaymentDialog = ref(false)
+const paymentError      = ref('')
+const paymentForm       = reactive<PurchasePaymentForm>({
+  amount:         0,
+  payment_date:   new Date().toISOString().slice(0, 10),
+  payment_method: 'bank_transfer',
+  reference_no:   '',
+  notes:          '',
+})
+
+function openPaymentDialog() {
+  paymentError.value          = ''
+  paymentForm.amount          = 0
+  paymentForm.payment_date    = new Date().toISOString().slice(0, 10)
+  paymentForm.payment_method  = 'bank_transfer'
+  paymentForm.reference_no    = ''
+  paymentForm.notes           = ''
+  showPaymentDialog.value     = true
+}
+
+async function doAddPayment() {
+  paymentError.value = ''
+  if (!paymentForm.amount || paymentForm.amount <= 0) {
+    paymentError.value = '請輸入有效金額'
+    return
+  }
+  try {
+    await poStore.addPayment(id.value, { ...paymentForm })
+    showPaymentDialog.value = false
+  } catch (e: unknown) {
+    paymentError.value = e instanceof Error ? e.message : '新增付款失敗'
+  }
+}
+
+// ── 退貨狀態顯示 ──────────────────────────────────────────────────────
+const returnStatusLabels: Record<string, string> = {
+  draft:     '草稿',
+  confirmed: '已確認',
+  cancelled: '已取消',
+}
+const returnStatusClasses: Record<string, string> = {
+  draft:     'bg-gray-100 text-gray-700',
+  confirmed: 'bg-green-100 text-green-700',
+  cancelled: 'bg-red-100 text-red-700',
+}
+
+async function doConfirmReturn(returnId: number) {
+  actionError.value = ''
+  try {
+    await poStore.confirmReturn(returnId)
+  } catch (e: unknown) {
+    actionError.value = e instanceof Error ? e.message : '確認退貨失敗'
+  }
+}
+
+async function doCancelReturn(returnId: number) {
+  actionError.value = ''
+  try {
+    await poStore.cancelReturn(returnId)
+  } catch (e: unknown) {
+    actionError.value = e instanceof Error ? e.message : '取消退貨失敗'
+  }
+}
 const actionError = ref('')
 const confirmCancel = ref(false)
 
@@ -160,13 +251,20 @@ function openPdf() {
             </button>
           </template>
 
-          <!-- approved / partial → 進貨驗收 + 列印PDF -->
+          <!-- approved / partial → 進貨驗收 + 列印PDF + 申請退貨 -->
           <template v-else-if="poStore.current.status === 'approved' || poStore.current.status === 'partial'">
             <NuxtLink
               :to="`/purchase/orders/${id}/receive`"
               class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
             >
               進貨驗收
+            </NuxtLink>
+            <NuxtLink
+              v-if="poStore.current.status === 'partial'"
+              :to="`/purchase/orders/${id}/return`"
+              class="rounded-md bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 transition-colors"
+            >
+              申請退貨
             </NuxtLink>
             <button
               class="rounded-md border px-4 py-2 text-sm hover:bg-muted transition-colors"
@@ -176,8 +274,14 @@ function openPdf() {
             </button>
           </template>
 
-          <!-- received → 列印 PDF -->
+          <!-- received → 列印 PDF + 申請退貨 -->
           <template v-else-if="poStore.current.status === 'received'">
+            <NuxtLink
+              :to="`/purchase/orders/${id}/return`"
+              class="rounded-md bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 transition-colors"
+            >
+              申請退貨
+            </NuxtLink>
             <button
               class="rounded-md border px-4 py-2 text-sm hover:bg-muted transition-colors"
               @click="openPdf"
@@ -307,6 +411,240 @@ function openPdf() {
           </div>
         </div>
       </div>
+    </template>
+
+      <!-- ── 付款狀態 ──────────────────────────────────────────────── -->
+      <template v-if="poStore.current.status !== 'draft' && poStore.current.status !== 'cancelled'">
+        <!-- 付款狀態卡片 -->
+        <div class="rounded-lg border p-6">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div class="flex items-center gap-3">
+              <h2 class="font-medium">付款狀態</h2>
+              <span
+                class="inline-flex items-center rounded-full px-2.5 py-0.5 text-sm font-medium"
+                :class="paymentStatusClasses[poStore.current.payment_status ?? 'unpaid']"
+              >
+                {{ paymentStatusLabels[poStore.current.payment_status ?? 'unpaid'] }}
+              </span>
+            </div>
+            <button
+              class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+              @click="openPaymentDialog"
+            >
+              + 新增付款
+            </button>
+          </div>
+          <dl class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+            <div>
+              <dt class="text-muted-foreground">訂單金額</dt>
+              <dd class="font-medium">{{ fmt(poStore.current.total_amount) }}</dd>
+            </div>
+            <div>
+              <dt class="text-muted-foreground">已付金額</dt>
+              <dd class="font-medium text-green-700">{{ fmt(poStore.current.paid_amount ?? 0) }}</dd>
+            </div>
+            <div>
+              <dt class="text-muted-foreground">未付餘額</dt>
+              <dd
+                class="font-medium"
+                :class="(poStore.current.total_amount - (poStore.current.paid_amount ?? 0)) > 0 ? 'text-red-600' : 'text-green-600'"
+              >
+                {{ fmt(poStore.current.total_amount - (poStore.current.paid_amount ?? 0)) }}
+              </dd>
+            </div>
+            <div v-if="poStore.current.payment_due_date">
+              <dt class="text-muted-foreground">付款期限</dt>
+              <dd>{{ formatDate(poStore.current.payment_due_date) }}</dd>
+            </div>
+          </dl>
+        </div>
+
+        <!-- 付款記錄 -->
+        <div class="rounded-lg border overflow-hidden">
+          <div class="flex items-center justify-between px-6 py-4 border-b bg-muted/20">
+            <h2 class="font-medium">付款記錄</h2>
+          </div>
+          <div v-if="poStore.payments.length === 0" class="px-6 py-8 text-center text-sm text-muted-foreground">
+            尚無付款記錄
+          </div>
+          <table v-else class="w-full text-sm">
+            <thead class="bg-muted/50">
+              <tr>
+                <th class="px-4 py-3 text-left font-medium">付款日期</th>
+                <th class="px-4 py-3 text-left font-medium">付款方式</th>
+                <th class="px-4 py-3 text-right font-medium">金額</th>
+                <th class="px-4 py-3 text-left font-medium">參考號碼</th>
+                <th class="px-4 py-3 text-left font-medium">備註</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y">
+              <tr
+                v-for="payment in poStore.payments"
+                :key="payment.id"
+                class="hover:bg-muted/30 transition-colors"
+              >
+                <td class="px-4 py-3">{{ formatDate(payment.payment_date) }}</td>
+                <td class="px-4 py-3">{{ paymentMethodLabels[payment.payment_method] ?? payment.payment_method }}</td>
+                <td class="px-4 py-3 text-right font-medium text-green-700">{{ fmt(payment.amount) }}</td>
+                <td class="px-4 py-3 font-mono text-xs">{{ payment.reference_no ?? '-' }}</td>
+                <td class="px-4 py-3 text-muted-foreground">{{ payment.notes ?? '-' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 退貨記錄 -->
+        <div class="rounded-lg border overflow-hidden">
+          <div class="flex items-center justify-between px-6 py-4 border-b bg-muted/20">
+            <h2 class="font-medium">退貨記錄</h2>
+            <NuxtLink
+              v-if="poStore.current.status === 'received' || poStore.current.status === 'partial'"
+              :to="`/purchase/orders/${id}/return`"
+              class="text-sm text-primary hover:underline"
+            >
+              申請退貨 →
+            </NuxtLink>
+          </div>
+          <div v-if="poStore.returns.length === 0" class="px-6 py-8 text-center text-sm text-muted-foreground">
+            尚無退貨記錄
+          </div>
+          <table v-else class="w-full text-sm">
+            <thead class="bg-muted/50">
+              <tr>
+                <th class="px-4 py-3 text-left font-medium">退貨單號</th>
+                <th class="px-4 py-3 text-left font-medium">狀態</th>
+                <th class="px-4 py-3 text-left font-medium">退貨原因</th>
+                <th class="px-4 py-3 text-left font-medium">申請時間</th>
+                <th class="px-4 py-3 text-left font-medium">操作</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y">
+              <tr
+                v-for="ret in poStore.returns"
+                :key="ret.id"
+                class="hover:bg-muted/30 transition-colors"
+              >
+                <td class="px-4 py-3 font-mono text-xs">{{ ret.return_number }}</td>
+                <td class="px-4 py-3">
+                  <span
+                    class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                    :class="returnStatusClasses[ret.status]"
+                  >
+                    {{ returnStatusLabels[ret.status] }}
+                  </span>
+                </td>
+                <td class="px-4 py-3">{{ ret.reason ?? '-' }}</td>
+                <td class="px-4 py-3">{{ formatDate(ret.created_at) }}</td>
+                <td class="px-4 py-3">
+                  <button
+                    v-if="ret.status === 'draft'"
+                    :disabled="poStore.returnConfirming"
+                    class="text-xs text-primary hover:underline mr-2 disabled:opacity-50"
+                    @click="doConfirmReturn(ret.id)"
+                  >
+                    確認
+                  </button>
+                  <button
+                    v-if="ret.status === 'draft'"
+                    class="text-xs text-destructive hover:underline"
+                    @click="doCancelReturn(ret.id)"
+                  >
+                    取消
+                  </button>
+                  <span v-if="ret.status !== 'draft'" class="text-xs text-muted-foreground">-</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </template>
+
+      <!-- ── 新增付款 Dialog ─────────────────────────────────────────── -->
+      <Teleport to="body">
+        <div
+          v-if="showPaymentDialog"
+          class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          @click.self="showPaymentDialog = false"
+        >
+          <div class="w-full max-w-md rounded-xl bg-background shadow-xl p-6 space-y-4">
+            <h3 class="text-lg font-semibold">新增付款記錄</h3>
+
+            <div class="space-y-3">
+              <div>
+                <label class="text-sm font-medium">付款金額 <span class="text-destructive">*</span></label>
+                <input
+                  v-model.number="paymentForm.amount"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  class="mt-1 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="請輸入金額"
+                />
+              </div>
+              <div>
+                <label class="text-sm font-medium">付款日期 <span class="text-destructive">*</span></label>
+                <input
+                  v-model="paymentForm.payment_date"
+                  type="date"
+                  class="mt-1 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label class="text-sm font-medium">付款方式 <span class="text-destructive">*</span></label>
+                <select
+                  v-model="paymentForm.payment_method"
+                  class="mt-1 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="bank_transfer">銀行轉帳</option>
+                  <option value="cash">現金</option>
+                  <option value="check">支票</option>
+                  <option value="other">其他</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-sm font-medium">參考號碼</label>
+                <input
+                  v-model="paymentForm.reference_no"
+                  type="text"
+                  class="mt-1 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="如：匯款單號、支票號碼"
+                />
+              </div>
+              <div>
+                <label class="text-sm font-medium">備註</label>
+                <textarea
+                  v-model="paymentForm.notes"
+                  rows="2"
+                  class="mt-1 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                />
+              </div>
+            </div>
+
+            <p
+              v-if="paymentError"
+              class="rounded border border-destructive bg-destructive/5 px-3 py-2 text-sm text-destructive"
+            >
+              {{ paymentError }}
+            </p>
+
+            <div class="flex justify-end gap-2 pt-2">
+              <button
+                class="rounded-md border px-4 py-2 text-sm hover:bg-muted transition-colors"
+                @click="showPaymentDialog = false"
+              >
+                取消
+              </button>
+              <button
+                :disabled="poStore.paymentSaving"
+                class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60 transition-colors"
+                @click="doAddPayment"
+              >
+                {{ poStore.paymentSaving ? '儲存中…' : '確認付款' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Teleport>
     </template>
 
     <!-- 找不到 -->

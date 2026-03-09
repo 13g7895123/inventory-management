@@ -8,6 +8,7 @@ use App\Controllers\Api\V1\BaseApiController;
 use App\Services\GoodsReceiptService;
 use App\Services\PurchaseOrderPdfService;
 use App\Services\PurchaseOrderService;
+use App\Services\SupplierPaymentService;
 use CodeIgniter\HTTP\ResponseInterface;
 
 /**
@@ -21,6 +22,8 @@ use CodeIgniter\HTTP\ResponseInterface;
  *   POST /api/v1/purchase-orders/:id/approve
  *   POST /api/v1/purchase-orders/:id/cancel
  *   POST /api/v1/purchase-orders/:id/receive
+ *   GET  /api/v1/purchase-orders/:id/payments
+ *   POST /api/v1/purchase-orders/:id/payments
  */
 class PurchaseOrderController extends BaseApiController
 {
@@ -28,6 +31,7 @@ class PurchaseOrderController extends BaseApiController
         private readonly PurchaseOrderService    $poService,
         private readonly GoodsReceiptService     $grService,
         private readonly PurchaseOrderPdfService $pdfService,
+        private readonly SupplierPaymentService  $paymentService,
     ) {
     }
 
@@ -233,6 +237,69 @@ class PurchaseOrderController extends BaseApiController
             return api_error($e->getMessage(), ResponseInterface::HTTP_NOT_FOUND);
         } catch (\Exception $e) {
             return api_error('PDF 產生失敗：' . $e->getMessage());
+        }
+    }
+
+    // ── 付款記錄 ──────────────────────────────────────────────────────
+
+    /**
+     * GET /api/v1/purchase-orders/:id/payments
+     */
+    public function listPayments($id = null): ResponseInterface
+    {
+        try {
+            $payments = $this->paymentService->listPayments((int) $id);
+
+            return api_success(array_map(fn ($p) => $p->toArray(), $payments));
+        } catch (\RuntimeException $e) {
+            return api_error($e->getMessage(), ResponseInterface::HTTP_NOT_FOUND);
+        }
+    }
+
+    /**
+     * POST /api/v1/purchase-orders/:id/payments
+     *
+     * Body:
+     * {
+     *   "amount": 10000.00,
+     *   "payment_date": "2026-03-09",
+     *   "payment_method": "bank_transfer",  // bank_transfer|cash|check|other
+     *   "reference_no": "TXN-001",          // optional
+     *   "notes": ""                         // optional
+     * }
+     */
+    public function addPayment($id = null): ResponseInterface
+    {
+        $rules = [
+            'amount'         => 'required|decimal|greater_than[0]',
+            'payment_date'   => 'required|valid_date[Y-m-d]',
+            'payment_method' => 'required|in_list[bank_transfer,cash,check,other]',
+            'reference_no'   => 'permit_empty|max_length[100]',
+            'notes'          => 'permit_empty|max_length[1000]',
+        ];
+
+        if (!$this->validate($rules)) {
+            return api_error(
+                '請求參數錯誤',
+                ResponseInterface::HTTP_UNPROCESSABLE_ENTITY,
+                $this->validator->getErrors(),
+            );
+        }
+
+        try {
+            $payment = $this->paymentService->addPayment(
+                (int) $id,
+                $this->jsonBody(),
+                $this->currentUserId(),
+            );
+
+            return api_success($payment->toArray(), '付款記錄已新增', ResponseInterface::HTTP_CREATED);
+        } catch (\DomainException $e) {
+            return api_error($e->getMessage(), ResponseInterface::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (\RuntimeException $e) {
+            return api_error($e->getMessage(), ResponseInterface::HTTP_NOT_FOUND);
+        } catch (\Exception $e) {
+            return api_error('新增付款失敗：' . $e->getMessage());
         }
     }
 }

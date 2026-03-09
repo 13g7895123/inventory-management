@@ -55,7 +55,16 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], static funct
         $routes->post('purchase-orders/(:num)/cancel',   'Purchase\PurchaseOrderController::cancel/$1');
         $routes->post('purchase-orders/(:num)/receive',  'Purchase\PurchaseOrderController::receive/$1');
         $routes->get('purchase-orders/(:num)/pdf',       'Purchase\PurchaseOrderController::pdf/$1');
+        // 付款記錄
+        $routes->get('purchase-orders/(:num)/payments',  'Purchase\PurchaseOrderController::listPayments/$1');
+        $routes->post('purchase-orders/(:num)/payments', 'Purchase\PurchaseOrderController::addPayment/$1');
 
+        // 採購退貨
+        $routes->get('purchase-orders/(:num)/returns',   'Purchase\PurchaseReturnController::listByOrder/$1');
+        $routes->post('purchase-orders/(:num)/returns',  'Purchase\PurchaseReturnController::create/$1');
+        $routes->get('purchase-returns/(:num)',          'Purchase\PurchaseReturnController::show/$1');
+        $routes->post('purchase-returns/(:num)/confirm', 'Purchase\PurchaseReturnController::confirm/$1');
+        $routes->post('purchase-returns/(:num)/cancel',  'Purchase\PurchaseReturnController::cancel/$1');
         // ── 銷售管理 ──────────────────────────────────────
         $routes->get('sales-orders',                   'Sales\SalesOrderController::index');
         $routes->post('sales-orders',                  'Sales\SalesOrderController::create');

@@ -125,6 +125,8 @@ export interface Supplier {
 // ── 採購單 ────────────────────────────────────────────────────────
 
 export type PurchaseOrderStatus = 'draft' | 'pending' | 'approved' | 'partial' | 'received' | 'cancelled'
+export type PurchasePaymentStatus = 'unpaid' | 'partial' | 'paid'
+export type PurchasePaymentMethod = 'bank_transfer' | 'cash' | 'check' | 'other'
 
 export interface PurchaseOrder {
   id: number
@@ -136,6 +138,9 @@ export interface PurchaseOrder {
   tax_rate: number
   tax_amount: number
   total_amount: number
+  payment_status: PurchasePaymentStatus
+  paid_amount: number
+  payment_due_date: string | null
   expected_date: string | null
   notes: string | null
   approved_by: number | null
@@ -212,6 +217,76 @@ export interface ReceiveLineForm {
   item_name?: string
   ordered_qty?: number
   already_received?: number
+}
+
+// ── 付款記錄 ──────────────────────────────────────────────────────
+
+export interface PurchasePayment {
+  id: number
+  purchase_order_id: number
+  amount: number
+  payment_date: string
+  payment_method: PurchasePaymentMethod
+  reference_no: string | null
+  notes: string | null
+  created_by: number
+  created_at: string
+  updated_at: string
+}
+
+export interface PurchasePaymentForm {
+  amount: number
+  payment_date: string
+  payment_method: PurchasePaymentMethod
+  reference_no?: string
+  notes?: string
+}
+
+// ── 採購退貨 ──────────────────────────────────────────────────────
+
+export type PurchaseReturnStatus = 'draft' | 'confirmed' | 'cancelled'
+
+export interface PurchaseReturn {
+  id: number
+  return_number: string
+  purchase_order_id: number
+  status: PurchaseReturnStatus
+  reason: string | null
+  notes: string | null
+  created_by: number
+  confirmed_by: number | null
+  confirmed_at: string | null
+  created_at: string
+  updated_at: string
+  lines?: PurchaseReturnLine[]
+}
+
+export interface PurchaseReturnLine {
+  id: number
+  purchase_return_id: number
+  purchase_order_line_id: number
+  sku_id: number
+  return_qty: number
+  unit_cost: number | null
+  return_reason: string | null
+  batch_number: string | null
+  notes: string | null
+  sku_code?: string
+  item_name?: string
+}
+
+export interface PurchaseReturnLineForm {
+  purchase_order_line_id: number
+  sku_id: number
+  return_qty: number
+  unit_cost?: number
+  return_reason?: string
+  batch_number?: string
+  notes?: string
+  // 顯示用
+  sku_code?: string
+  item_name?: string
+  received_qty?: number
 }
 
 export interface SalesOrder {

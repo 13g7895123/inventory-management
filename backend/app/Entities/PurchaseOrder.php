@@ -17,19 +17,26 @@ class PurchaseOrder extends BaseEntity
     public const STATUS_RECEIVED = 'received';  // 全部到貨
     public const STATUS_CANCELLED = 'cancelled';
 
+    // 付款狀態常數
+    public const PAYMENT_UNPAID  = 'unpaid';
+    public const PAYMENT_PARTIAL = 'partial';
+    public const PAYMENT_PAID    = 'paid';
+
     protected $casts = [
-        'id'             => 'integer',
-        'supplier_id'    => 'integer',
-        'warehouse_id'   => 'integer',
-        'subtotal'       => 'float',
-        'tax_amount'     => 'float',
-        'total_amount'   => 'float',
-        'approved_by'    => '?integer',
-        'approved_at'    => '?datetime',
-        'expected_date'  => '?datetime',
-        'created_at'     => 'datetime',
-        'updated_at'     => 'datetime',
-        'deleted_at'     => '?datetime',
+        'id'              => 'integer',
+        'supplier_id'     => 'integer',
+        'warehouse_id'    => 'integer',
+        'subtotal'        => 'float',
+        'tax_amount'      => 'float',
+        'total_amount'    => 'float',
+        'paid_amount'     => 'float',
+        'approved_by'     => '?integer',
+        'approved_at'     => '?datetime',
+        'expected_date'   => '?datetime',
+        'payment_due_date'=> '?datetime',
+        'created_at'      => 'datetime',
+        'updated_at'      => 'datetime',
+        'deleted_at'      => '?datetime',
     ];
 
     protected array $hidden = ['deleted_at'];
