@@ -66,12 +66,24 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], static funct
         $routes->post('purchase-returns/(:num)/confirm', 'Purchase\PurchaseReturnController::confirm/$1');
         $routes->post('purchase-returns/(:num)/cancel',  'Purchase\PurchaseReturnController::cancel/$1');
         // ── 銷售管理 ──────────────────────────────────────
+        // 客戶
+        $routes->get('customers',                      'Sales\CustomerController::index');
+        $routes->post('customers',                     'Sales\CustomerController::create');
+        $routes->get('customers/(:num)',               'Sales\CustomerController::show/$1');
+        $routes->put('customers/(:num)',               'Sales\CustomerController::update/$1');
+        $routes->get('customers/(:num)/addresses',     'Sales\CustomerController::listAddresses/$1');
+        $routes->post('customers/(:num)/addresses',    'Sales\CustomerController::addAddress/$1');
+        // 銷售訂單
         $routes->get('sales-orders',                   'Sales\SalesOrderController::index');
         $routes->post('sales-orders',                  'Sales\SalesOrderController::create');
         $routes->get('sales-orders/(:num)',            'Sales\SalesOrderController::show/$1');
         $routes->post('sales-orders/(:num)/confirm',   'Sales\SalesOrderController::confirm/$1');
-        $routes->post('sales-orders/(:num)/ship',      'Sales\SalesOrderController::ship/$1');
         $routes->post('sales-orders/(:num)/cancel',    'Sales\SalesOrderController::cancel/$1');
+        $routes->get('sales-orders/(:num)/pdf',        'Sales\SalesOrderController::pdf/$1');
+        // 出貨單
+        $routes->get('sales-orders/(:num)/shipments',  'Sales\ShipmentController::listBySalesOrder/$1');
+        $routes->post('sales-orders/(:num)/shipments', 'Sales\ShipmentController::create/$1');
+        $routes->get('shipments/(:num)',               'Sales\ShipmentController::show/$1');
 
         // ── 倉庫管理 ──────────────────────────────────────
         $routes->get('warehouses',           'Warehouse\WarehouseController::index');

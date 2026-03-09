@@ -10,6 +10,8 @@ use App\Libraries\JWT\JWTService;
 use App\Libraries\ImageUploadService;
 use App\Models\BatchSerialModel;
 use App\Models\CategoryModel;
+use App\Models\CustomerAddressModel;
+use App\Models\CustomerModel;
 use App\Models\GoodsReceiptLineModel;
 use App\Models\GoodsReceiptModel;
 use App\Models\InventoryModel;
@@ -19,24 +21,35 @@ use App\Models\ItemSkuModel;
 use App\Models\PurchaseOrderLineModel;
 use App\Models\PurchaseOrderModel;
 use App\Models\RefreshTokenModel;
+use App\Models\SalesOrderLineModel;
+use App\Models\SalesOrderModel;
+use App\Models\ShipmentLineModel;
+use App\Models\ShipmentModel;
 use App\Models\SupplierModel;
 use App\Models\UnitModel;
 use App\Models\UserModel;
 use App\Repositories\CategoryRepository;
+use App\Repositories\CustomerRepository;
 use App\Repositories\InventoryRepository;
 use App\Repositories\ItemRepository;
 use App\Repositories\PurchaseOrderRepository;
+use App\Repositories\SalesOrderRepository;
+use App\Repositories\ShipmentRepository;
 use App\Repositories\SkuRepository;
 use App\Repositories\SupplierRepository;
 use App\Repositories\UnitRepository;
 use App\Services\AuthService;
 use App\Services\CategoryService;
+use App\Services\CustomerService;
 use App\Services\GoodsReceiptService;
 use App\Services\ImportService;
 use App\Services\InventoryService;
 use App\Services\ItemService;
 use App\Services\PurchaseOrderPdfService;
 use App\Services\PurchaseOrderService;
+use App\Services\SalesOrderPdfService;
+use App\Services\SalesOrderService;
+use App\Services\ShipmentService;
 use App\Services\SkuService;
 use App\Services\SupplierService;
 use App\Services\UnitService;
@@ -264,6 +277,91 @@ class Services extends BaseService
         return new PurchaseOrderPdfService(
             static::purchaseOrderRepository(),
             static::supplierRepository(),
+        );
+    }
+
+    // ── Sprint 8: 銷售管理 ──────────────────────────────────────────
+
+    public static function customerRepository(bool $getShared = true): CustomerRepository
+    {
+        if ($getShared) {
+            return static::getSharedInstance('customerRepository');
+        }
+
+        return new CustomerRepository(
+            new CustomerModel(),
+            new CustomerAddressModel(),
+        );
+    }
+
+    public static function salesOrderRepository(bool $getShared = true): SalesOrderRepository
+    {
+        if ($getShared) {
+            return static::getSharedInstance('salesOrderRepository');
+        }
+
+        return new SalesOrderRepository(
+            new SalesOrderModel(),
+            new SalesOrderLineModel(),
+        );
+    }
+
+    public static function shipmentRepository(bool $getShared = true): ShipmentRepository
+    {
+        if ($getShared) {
+            return static::getSharedInstance('shipmentRepository');
+        }
+
+        return new ShipmentRepository(
+            new ShipmentModel(),
+            new ShipmentLineModel(),
+        );
+    }
+
+    public static function customerService(bool $getShared = true): CustomerService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('customerService');
+        }
+
+        return new CustomerService(static::customerRepository());
+    }
+
+    public static function salesOrderService(bool $getShared = true): SalesOrderService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('salesOrderService');
+        }
+
+        return new SalesOrderService(
+            static::salesOrderRepository(),
+            static::customerRepository(),
+            static::inventoryService(),
+        );
+    }
+
+    public static function shipmentService(bool $getShared = true): ShipmentService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('shipmentService');
+        }
+
+        return new ShipmentService(
+            static::shipmentRepository(),
+            static::salesOrderRepository(),
+            static::inventoryService(),
+        );
+    }
+
+    public static function salesOrderPdfService(bool $getShared = true): SalesOrderPdfService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('salesOrderPdfService');
+        }
+
+        return new SalesOrderPdfService(
+            static::salesOrderRepository(),
+            static::customerRepository(),
         );
     }
 
