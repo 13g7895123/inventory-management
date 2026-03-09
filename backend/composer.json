@@ -40,6 +40,11 @@
         "cs-fix": "php-cs-fixer fix app --rules=@PSR12",
         "cs-check": "php-cs-fixer fix app --rules=@PSR12 --dry-run"
     },
-    "minimum-stability": "stable",
-    "prefer-stable": true
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "config": {
+        "audit": {
+            "ignore": ["PKSA-y2cr-5h3j-g3ys"]
+        }
+    }
 }

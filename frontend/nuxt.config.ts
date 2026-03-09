@@ -4,6 +4,8 @@ export default defineNuxtConfig({
 
   devtools: { enabled: true },
 
+  css: ['~/app/assets/css/main.css'],
+
   app: {
     head: {
       title: '進銷存管理系統',

@@ -1,20 +1,17 @@
 services:
 
   # ─────────────────────────────────────────────
-  # Nuxt — 前端（僅 production 環境）
+  # Production 專用覆蓋設定
   # ─────────────────────────────────────────────
-  nuxt:
-    build:
-      context: ..
-      dockerfile: docker/frontend/Dockerfile.dev
-    volumes:
-      - ../frontend:/app
-      - /app/node_modules
-    environment:
-      - NUXT_PUBLIC_API_BASE=${NUXT_PUBLIC_API_BASE:-http://localhost/api/v1}
-    restart: unless-stopped
-
-  # production 時 nginx 額外依賴 nuxt
-  nginx:
-    depends_on:
-      - nuxt
+  # nuxt 服務已定義於 docker-compose.yml（共用）
+  # 未來可在此加入 production Dockerfile 覆蓋：
+  #
+  # nuxt:
+  #   build:
+  #     context: ..
+  #     dockerfile: docker/frontend/Dockerfile.prod
+  #   volumes: []  # production 不掛載源碼
+  #
+  # php-fpm:
+  #   environment:
+  #     - CI_ENVIRONMENT=production

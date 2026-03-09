@@ -27,23 +27,34 @@ RUN docker-php-ext-configure intl \
     xml \
     zip
 
-# ── 安裝 Redis 擴充套件 ──
-RUN pecl install redis \
- && docker-php-ext-enable redis
+# ── 安裝 Redis 擴充套件（需要 autoconf/gcc 等 build 工具，裝完即刪）──
+RUN apk add --no-cache --virtual .build-deps \
+    autoconf \
+    gcc \
+    g++ \
+    make \
+    musl-dev \
+ && pecl install redis \
+ && docker-php-ext-enable redis \
+ && apk del .build-deps
 
 # ── 安裝 Composer ──
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # ── 複製 PHP 設定 ──
-COPY php.ini /usr/local/etc/php/conf.d/custom.ini
+COPY docker/php/php.ini /usr/local/etc/php/conf.d/custom.ini
+
+# ── 複製容器啟動腳本 ──
+COPY docker/php/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 WORKDIR /var/www/backend
 
-# ── 安裝 Composer 依賴（在 build 時快取，volume mount 前執行）──
+# ── 安裝 Composer 依賴（build-time cache，加速首次啟動）──
 # context 為專案根目錄，故使用 backend/ 前綴
 COPY backend/composer*.json ./
-RUN composer install --no-scripts --no-autoloader --no-interaction 2>/dev/null || true
+RUN composer install --no-scripts --no-autoloader --no-interaction --no-progress 2>/dev/null || true
 
 EXPOSE 9000
 
-CMD ["php-fpm"]
+ENTRYPOINT ["/entrypoint.sh"]

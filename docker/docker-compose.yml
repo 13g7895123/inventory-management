@@ -14,6 +14,7 @@ services:
     depends_on:
       - php-fpm
       - phpmyadmin
+      - nuxt
     restart: unless-stopped
 
   # ─────────────────────────────────────────────
@@ -100,7 +101,19 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     command: server /data --console-address ":9001"
     restart: unless-stopped
-
+  # ────────────────────────────────────────────
+  # Nuxt 3 — 前端開發伺服器（Hot Reload）
+  # ────────────────────────────────────────────
+  nuxt:
+    build:
+      context: ..
+      dockerfile: docker/frontend/Dockerfile.dev
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    environment:
+      - NUXT_PUBLIC_API_BASE=${NUXT_PUBLIC_API_BASE:-http://localhost/api/v1}
+    restart: unless-stopped
 volumes:
   mysql_data:
   redis_data:

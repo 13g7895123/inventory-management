@@ -117,7 +117,7 @@ export interface SalesOrderLine {
 // ── Auth ──────────────────────────────────────────────────────────
 
 export interface LoginPayload {
-  email: string
+  username: string
   password: string
 }
 
@@ -130,8 +130,8 @@ export interface AuthTokens {
 
 export interface AuthUser {
   id: number
+  username: string
   name: string
-  email: string
   role: string
-  permissions: string[]
+  permissions?: string[]
 }
