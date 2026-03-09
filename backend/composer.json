@@ -6,7 +6,7 @@
     "require": {
         "php": "^8.2",
         "codeigniter4/framework": "^4.5",
-        "firebase/php-jwt": "^6.10",
+        "firebase/php-jwt": "^7.0",
         "phpoffice/phpspreadsheet": "^3.0",
         "dompdf/dompdf": "^2.0",
         "predis/predis": "^2.2",
@@ -43,6 +43,9 @@
     "minimum-stability": "dev",
     "prefer-stable": true,
     "config": {
+        "allow-plugins": {
+            "phpstan/extension-installer": true
+        },
         "audit": {
             "ignore": ["PKSA-y2cr-5h3j-g3ys"]
         }

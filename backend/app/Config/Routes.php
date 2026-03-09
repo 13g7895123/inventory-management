@@ -28,6 +28,12 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], static funct
         $routes->put('items/(:num)',     'Items\ItemController::update/$1');
         $routes->delete('items/(:num)', 'Items\ItemController::remove/$1');
 
+        // 商品圖片上傳
+        $routes->post('items/(:num)/images', 'Items\ItemController::uploadImage/$1');
+
+        // 批次匯入
+        $routes->post('items/import', 'Items\ItemController::import');
+
         // SKU
         $routes->get('items/(:num)/skus',    'Items\SkuController::index/$1');
         $routes->post('items/(:num)/skus',   'Items\SkuController::create/$1');
@@ -64,9 +70,18 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], static funct
         $routes->put('warehouses/(:num)',    'Warehouse\WarehouseController::update/$1');
 
         // ── 基礎資料 ──────────────────────────────────────
-        $routes->get('categories',  'Master\CategoryController::index');
-        $routes->post('categories', 'Master\CategoryController::create');
-        $routes->get('units',       'Master\UnitController::index');
+        $routes->get('categories',           'Master\CategoryController::index');
+        $routes->post('categories',          'Master\CategoryController::create');
+        $routes->get('categories/(:num)',    'Master\CategoryController::show/$1');
+        $routes->put('categories/(:num)',    'Master\CategoryController::update/$1');
+        $routes->delete('categories/(:num)', 'Master\CategoryController::remove/$1');
+
+        $routes->get('units',           'Master\UnitController::index');
+        $routes->post('units',          'Master\UnitController::create');
+        $routes->get('units/(:num)',    'Master\UnitController::show/$1');
+        $routes->put('units/(:num)',    'Master\UnitController::update/$1');
+        $routes->delete('units/(:num)', 'Master\UnitController::remove/$1');
+
         $routes->get('suppliers',   'Master\SupplierController::index');
         $routes->post('suppliers',  'Master\SupplierController::create');
 

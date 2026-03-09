@@ -13,12 +13,14 @@ namespace App\Entities;
 class ItemSku extends BaseEntity
 {
     protected $casts = [
-        'id'         => 'integer',
-        'item_id'    => 'integer',
-        'is_active'  => 'boolean',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => '?datetime',
+        'id'            => 'integer',
+        'item_id'       => 'integer',
+        'cost_price'    => 'float',
+        'selling_price' => 'float',
+        'is_active'     => 'boolean',
+        'created_at'    => 'datetime',
+        'updated_at'    => 'datetime',
+        'deleted_at'    => '?datetime',
     ];
 
     protected array $hidden = ['deleted_at'];

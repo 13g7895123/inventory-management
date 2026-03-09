@@ -121,7 +121,6 @@ class AuthService
      */
     private function resolveRoleName(int $roleId): string
     {
-        $row = db_connect()->table('roles')->where('id', $roleId)->get()->getRow();
-        return $row->name ?? 'staff';
+        return $this->userModel->findRoleName($roleId);
     }
 }

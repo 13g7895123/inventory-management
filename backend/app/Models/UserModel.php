@@ -64,4 +64,11 @@ class UserModel extends Model
              ->where('id', $userId)
              ->update();
     }
+
+    public function findRoleName(int $roleId): string
+    {
+        $row = $this->db->table('roles')->where('id', $roleId)->get()->getRow();
+
+        return $row->name ?? 'staff';
+    }
 }

@@ -75,15 +75,16 @@ class AuthServiceTest extends CIUnitTestCase
 
     public function testLoginSuccessReturnsTokens(): void
     {
-        $user = $this->makeUser(['password' => password_hash('correct', PASSWORD_BCRYPT)]);
+        $user = $this->makeUser(['password' => 'correct']);
 
         $this->userModel->method('findActiveByUsername')->willReturn($user);
-        $this->userModel->method('touchLastLogin')->willReturn(null);
+        $this->userModel->method('touchLastLogin');
+        $this->userModel->method('findRoleName')->willReturn('admin');
         $this->jwtService->method('generateAccessToken')->willReturn('access-token');
         $this->jwtService->method('generateRefreshToken')->willReturn('refresh-token');
         $this->jwtService->method('getTtl')->willReturn(3600);
         $this->jwtService->method('getRefreshTtl')->willReturn(604800);
-        $this->refreshTokenModel->method('store')->willReturn(null);
+        $this->refreshTokenModel->method('store');
 
         $result = $this->authService->login('admin', 'correct');
 
@@ -110,16 +111,16 @@ class AuthServiceTest extends CIUnitTestCase
     public function testRefreshRevokeOldAndIssueNew(): void
     {
         $tokenRecord = (object) ['user_id' => 1];
-        $user = $this->makeUser(['password' => password_hash('x', PASSWORD_BCRYPT)]);
-
+        $user = $this->makeUser();
         $this->refreshTokenModel->method('findValid')->willReturn($tokenRecord);
         $this->refreshTokenModel->expects($this->once())->method('revoke');
         $this->userModel->method('find')->willReturn($user);
+        $this->userModel->method('findRoleName')->willReturn('staff');
         $this->jwtService->method('generateAccessToken')->willReturn('new-access');
         $this->jwtService->method('generateRefreshToken')->willReturn('new-refresh');
         $this->jwtService->method('getTtl')->willReturn(3600);
         $this->jwtService->method('getRefreshTtl')->willReturn(604800);
-        $this->refreshTokenModel->method('store')->willReturn(null);
+        $this->refreshTokenModel->method('store');
 
         $result = $this->authService->refresh('old-token');
 

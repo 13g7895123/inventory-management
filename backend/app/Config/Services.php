@@ -7,16 +7,27 @@ namespace Config;
 use App\Listeners\LogInventoryTransaction;
 use App\Listeners\SendLowStockAlert;
 use App\Libraries\JWT\JWTService;
+use App\Libraries\ImageUploadService;
+use App\Models\CategoryModel;
 use App\Models\InventoryModel;
 use App\Models\InventoryTransactionModel;
 use App\Models\ItemModel;
+use App\Models\ItemSkuModel;
 use App\Models\RefreshTokenModel;
+use App\Models\UnitModel;
 use App\Models\UserModel;
+use App\Repositories\CategoryRepository;
 use App\Repositories\InventoryRepository;
 use App\Repositories\ItemRepository;
+use App\Repositories\SkuRepository;
+use App\Repositories\UnitRepository;
 use App\Services\AuthService;
+use App\Services\CategoryService;
+use App\Services\ImportService;
 use App\Services\InventoryService;
 use App\Services\ItemService;
+use App\Services\SkuService;
+use App\Services\UnitService;
 use CodeIgniter\Config\BaseService;
 
 /**
@@ -53,6 +64,33 @@ class Services extends BaseService
 
     // ── Repositories ─────────────────────────────────────────────────
 
+    public static function categoryRepository(bool $getShared = true): CategoryRepository
+    {
+        if ($getShared) {
+            return static::getSharedInstance('categoryRepository');
+        }
+
+        return new CategoryRepository(new CategoryModel());
+    }
+
+    public static function unitRepository(bool $getShared = true): UnitRepository
+    {
+        if ($getShared) {
+            return static::getSharedInstance('unitRepository');
+        }
+
+        return new UnitRepository(new UnitModel());
+    }
+
+    public static function skuRepository(bool $getShared = true): SkuRepository
+    {
+        if ($getShared) {
+            return static::getSharedInstance('skuRepository');
+        }
+
+        return new SkuRepository(new ItemSkuModel());
+    }
+
     public static function itemRepository(bool $getShared = true): ItemRepository
     {
         if ($getShared) {
@@ -73,6 +111,24 @@ class Services extends BaseService
 
     // ── Services ─────────────────────────────────────────────────────
 
+    public static function categoryService(bool $getShared = true): CategoryService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('categoryService');
+        }
+
+        return new CategoryService(static::categoryRepository());
+    }
+
+    public static function unitService(bool $getShared = true): UnitService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('unitService');
+        }
+
+        return new UnitService(static::unitRepository());
+    }
+
     public static function inventoryService(bool $getShared = true): InventoryService
     {
         if ($getShared) {
@@ -92,7 +148,40 @@ class Services extends BaseService
             return static::getSharedInstance('itemService');
         }
 
-        return new ItemService(static::itemRepository());
+        return new ItemService(
+            static::itemRepository(),
+            static::skuRepository(),
+        );
+    }
+
+    public static function skuService(bool $getShared = true): SkuService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('skuService');
+        }
+
+        return new SkuService(
+            static::skuRepository(),
+            static::itemRepository(),
+        );
+    }
+
+    public static function importService(bool $getShared = true): ImportService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('importService');
+        }
+
+        return new ImportService();
+    }
+
+    public static function imageUploadService(bool $getShared = true): ImageUploadService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('imageUploadService');
+        }
+
+        return new ImageUploadService();
     }
 
     // ── Listeners ────────────────────────────────────────────────────
