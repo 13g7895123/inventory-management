@@ -194,4 +194,117 @@ class InventoryService
     {
         return $this->inventoryRepo->findBelowSafetyStock($warehouseId);
     }
+
+    /**
+     * 查詢全部庫存（支援 warehouse_id / sku_id 過濾 + 分頁）
+     *
+     * @return array{data: Inventory[], total: int}
+     */
+    public function getAllInventory(array $criteria = [], array $options = []): array
+    {
+        $page    = (int) ($options['page'] ?? 1);
+        $perPage = (int) ($options['per_page'] ?? 20);
+        $offset  = ($page - 1) * $perPage;
+
+        $db = $this->txModel->db;
+
+        // 取得筆數（獨立 builder，避免和 data query 共用狀態）
+        $countBuilder = $db->table('inventory i')
+            ->join('item_skus', 'item_skus.id = i.sku_id', 'left')
+            ->join('items',     'items.id = item_skus.item_id', 'left')
+            ->join('warehouses', 'warehouses.id = i.warehouse_id', 'left');
+
+        if (!empty($criteria['warehouse_id'])) {
+            $countBuilder->where('i.warehouse_id', (int) $criteria['warehouse_id']);
+        }
+        if (!empty($criteria['sku_id'])) {
+            $countBuilder->where('i.sku_id', (int) $criteria['sku_id']);
+        }
+
+        $total = (int) $countBuilder->countAllResults();
+
+        // 取得資料（再建一個 builder）
+        $dataBuilder = $db->table('inventory i')
+            ->select('i.*, item_skus.sku_code, items.name as item_name, warehouses.name as warehouse_name')
+            ->join('item_skus', 'item_skus.id = i.sku_id', 'left')
+            ->join('items',     'items.id = item_skus.item_id', 'left')
+            ->join('warehouses', 'warehouses.id = i.warehouse_id', 'left');
+
+        if (!empty($criteria['warehouse_id'])) {
+            $dataBuilder->where('i.warehouse_id', (int) $criteria['warehouse_id']);
+        }
+        if (!empty($criteria['sku_id'])) {
+            $dataBuilder->where('i.sku_id', (int) $criteria['sku_id']);
+        }
+
+        $rows = $dataBuilder->limit($perPage, $offset)->get()->getResultArray();
+
+        $entities = array_map(static function (array $row): Inventory {
+            $e = new Inventory();
+            $e->fill($row);
+            return $e;
+        }, $rows);
+
+        return ['data' => $entities, 'total' => $total];
+    }
+
+    /**
+     * 手動調整庫存（盤點差值、後台修正）
+     *
+     * @throws \RuntimeException
+     */
+    public function adjustStock(
+        int    $skuId,
+        int    $warehouseId,
+        float  $qty,
+        string $reason,
+        int    $operatorId,
+    ): Inventory {
+        $this->db->transStart();
+
+        $inventory = $this->inventoryRepo->findAndLock($skuId, $warehouseId);
+
+        if ($inventory === null) {
+            // 首次調整視為首次入庫
+            $inventory = new Inventory();
+            $inventory->fill([
+                'sku_id'       => $skuId,
+                'warehouse_id' => $warehouseId,
+                'on_hand_qty'  => 0,
+                'reserved_qty' => 0,
+                'on_order_qty' => 0,
+                'avg_cost'     => 0,
+            ]);
+        }
+
+        // 記錄舊值（必須在修改前讀取）
+        $oldQty = (float) ($inventory->attributes['on_hand_qty'] ?? 0);
+
+        // qty 代表調整後的絕對在庫數量
+        $inventory->attributes['on_hand_qty'] = $qty;
+
+        $this->inventoryRepo->save($inventory);
+
+        // 記錄調整流水
+        $this->txModel->insert([
+            'sku_id'       => $skuId,
+            'warehouse_id' => $warehouseId,
+            'tx_type'      => 'ADJUST',
+            'qty_change'   => $qty - $oldQty,
+            'qty_after'    => $qty,
+            'source_type'  => 'manual',
+            'source_id'    => 0,
+            'operator_id'  => $operatorId,
+            'note'         => $reason,
+            'occurred_at'  => date('Y-m-d H:i:s'),
+        ]);
+
+        $this->db->transComplete();
+
+        if (! $this->db->transStatus()) {
+            throw new \RuntimeException('庫存調整 DB 交易失敗');
+        }
+
+        return $inventory;
+    }
 }

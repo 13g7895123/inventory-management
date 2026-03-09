@@ -326,6 +326,7 @@ export interface CustomerAddress {
 // ── 銷售訂單 ──────────────────────────────────────────────────────
 
 export type SalesOrderStatus = 'draft' | 'confirmed' | 'partial' | 'shipped' | 'cancelled'
+export type SalesPaymentStatus = 'unpaid' | 'partial' | 'paid'
 
 export interface SalesOrder {
   id: number
@@ -344,6 +345,9 @@ export interface SalesOrder {
   tax_amount: number
   total_amount: number
   discount_amount: number
+  payment_status: SalesPaymentStatus
+  paid_amount: number
+  payment_due_date: string | null
   is_dropship: boolean
   notes: string | null
   created_by: number
@@ -437,6 +441,84 @@ export interface ShipmentLineForm {
 export interface LoginPayload {
   username: string
   password: string
+}
+
+// ── 銷售收款 ──────────────────────────────────────────────────────
+
+export type SalesPaymentMethod = 'bank_transfer' | 'cash' | 'check' | 'credit_card' | 'other'
+
+export interface SalesPayment {
+  id: number
+  sales_order_id: number
+  amount: number
+  payment_date: string
+  payment_method: SalesPaymentMethod
+  reference_no: string | null
+  notes: string | null
+  created_by: number
+  created_at: string
+  updated_at: string
+}
+
+export interface SalesPaymentForm {
+  amount: number
+  payment_date: string
+  payment_method: SalesPaymentMethod
+  reference_no?: string
+  notes?: string
+}
+
+// ── 銷售退貨 ──────────────────────────────────────────────────────
+
+export type SalesReturnStatus = 'draft' | 'confirmed' | 'cancelled'
+
+export interface SalesReturn {
+  id: number
+  return_number: string
+  sales_order_id: number
+  warehouse_id: number
+  status: SalesReturnStatus
+  reason: string | null
+  refund_amount: number
+  notes: string | null
+  created_by: number
+  confirmed_by: number | null
+  confirmed_at: string | null
+  created_at: string
+  updated_at: string
+  // 關聯欄位
+  so_number?: string
+  customer_name?: string
+}
+
+export interface SalesReturnLine {
+  id: number
+  sales_return_id: number
+  sales_order_line_id: number
+  sku_id: number
+  return_qty: number
+  unit_price: number | null
+  return_reason: string | null
+  batch_number: string | null
+  notes: string | null
+  // 關聯欄位
+  sku_code?: string
+  item_name?: string
+}
+
+export interface SalesReturnLineForm {
+  sales_order_line_id: number
+  sku_id: number
+  return_qty: number
+  unit_price?: number
+  return_reason?: string
+  batch_number?: string
+  notes?: string
+  // 顯示用
+  sku_code?: string
+  item_name?: string
+  shipped_qty?: number
+  pending_return_qty?: number
 }
 
 export interface AuthTokens {

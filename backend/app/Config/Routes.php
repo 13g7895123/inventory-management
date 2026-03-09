@@ -46,6 +46,22 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], static funct
         $routes->get('skus/(:num)/inventories',        'Inventory\InventoryController::bySku/$1');
         $routes->post('inventories/adjust',            'Inventory\InventoryController::adjust');
 
+        // ── 庫存調撥 ──────────────────────────────────────
+        $routes->get('stock-transfers',                       'Inventory\StockTransferController::index');
+        $routes->post('stock-transfers',                      'Inventory\StockTransferController::create');
+        $routes->get('stock-transfers/(:num)',                'Inventory\StockTransferController::show/$1');
+        $routes->post('stock-transfers/(:num)/confirm',       'Inventory\StockTransferController::confirm/$1');
+        $routes->post('stock-transfers/(:num)/cancel',        'Inventory\StockTransferController::cancel/$1');
+
+        // ── 盤點管理 ──────────────────────────────────────
+        $routes->get('stocktakes',                            'Inventory\StocktakeController::index');
+        $routes->post('stocktakes',                           'Inventory\StocktakeController::create');
+        $routes->get('stocktakes/(:num)',                     'Inventory\StocktakeController::show/$1');
+        $routes->post('stocktakes/(:num)/start',              'Inventory\StocktakeController::start/$1');
+        $routes->post('stocktakes/(:num)/count',              'Inventory\StocktakeController::updateCount/$1');
+        $routes->post('stocktakes/(:num)/confirm',            'Inventory\StocktakeController::confirm/$1');
+        $routes->post('stocktakes/(:num)/cancel',             'Inventory\StocktakeController::cancel/$1');
+
         // ── 採購管理 ──────────────────────────────────────
         $routes->get('purchase-orders',              'Purchase\PurchaseOrderController::index');
         $routes->post('purchase-orders',             'Purchase\PurchaseOrderController::create');
@@ -74,12 +90,21 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], static funct
         $routes->get('customers/(:num)/addresses',     'Sales\CustomerController::listAddresses/$1');
         $routes->post('customers/(:num)/addresses',    'Sales\CustomerController::addAddress/$1');
         // 銷售訂單
-        $routes->get('sales-orders',                   'Sales\SalesOrderController::index');
-        $routes->post('sales-orders',                  'Sales\SalesOrderController::create');
-        $routes->get('sales-orders/(:num)',            'Sales\SalesOrderController::show/$1');
-        $routes->post('sales-orders/(:num)/confirm',   'Sales\SalesOrderController::confirm/$1');
-        $routes->post('sales-orders/(:num)/cancel',    'Sales\SalesOrderController::cancel/$1');
-        $routes->get('sales-orders/(:num)/pdf',        'Sales\SalesOrderController::pdf/$1');
+        $routes->get('sales-orders',                        'Sales\SalesOrderController::index');
+        $routes->post('sales-orders',                       'Sales\SalesOrderController::create');
+        $routes->get('sales-orders/(:num)',                 'Sales\SalesOrderController::show/$1');
+        $routes->post('sales-orders/(:num)/confirm',        'Sales\SalesOrderController::confirm/$1');
+        $routes->post('sales-orders/(:num)/cancel',         'Sales\SalesOrderController::cancel/$1');
+        $routes->get('sales-orders/(:num)/pdf',             'Sales\SalesOrderController::pdf/$1');
+        // 收款
+        $routes->get('sales-orders/(:num)/payments',        'Sales\SalesOrderController::listPayments/$1');
+        $routes->post('sales-orders/(:num)/payments',       'Sales\SalesOrderController::addPayment/$1');
+        // 退貨
+        $routes->get('sales-orders/(:num)/returns',         'Sales\SalesReturnController::listByOrder/$1');
+        $routes->post('sales-orders/(:num)/returns',        'Sales\SalesReturnController::create/$1');
+        $routes->get('sales-returns/(:num)',                'Sales\SalesReturnController::show/$1');
+        $routes->post('sales-returns/(:num)/confirm',       'Sales\SalesReturnController::confirm/$1');
+        $routes->post('sales-returns/(:num)/cancel',        'Sales\SalesReturnController::cancel/$1');
         // 出貨單
         $routes->get('sales-orders/(:num)/shipments',  'Sales\ShipmentController::listBySalesOrder/$1');
         $routes->post('sales-orders/(:num)/shipments', 'Sales\ShipmentController::create/$1');

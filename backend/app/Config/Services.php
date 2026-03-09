@@ -25,9 +25,14 @@ use App\Models\SalesOrderLineModel;
 use App\Models\SalesOrderModel;
 use App\Models\ShipmentLineModel;
 use App\Models\ShipmentModel;
+use App\Models\StocktakeLineModel;
+use App\Models\StocktakeModel;
+use App\Models\StockTransferLineModel;
+use App\Models\StockTransferModel;
 use App\Models\SupplierModel;
 use App\Models\UnitModel;
 use App\Models\UserModel;
+use App\Models\WarehouseModel;
 use App\Repositories\CategoryRepository;
 use App\Repositories\CustomerRepository;
 use App\Repositories\InventoryRepository;
@@ -51,8 +56,11 @@ use App\Services\SalesOrderPdfService;
 use App\Services\SalesOrderService;
 use App\Services\ShipmentService;
 use App\Services\SkuService;
+use App\Services\StocktakeService;
+use App\Services\StockTransferService;
 use App\Services\SupplierService;
 use App\Services\UnitService;
+use App\Services\WarehouseService;
 use CodeIgniter\Config\BaseService;
 
 /**
@@ -362,6 +370,44 @@ class Services extends BaseService
         return new SalesOrderPdfService(
             static::salesOrderRepository(),
             static::customerRepository(),
+        );
+    }
+
+    // ── Sprint 11: 庫存管理 ─────────────────────────────────────────
+
+    public static function warehouseService(bool $getShared = true): WarehouseService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('warehouseService');
+        }
+
+        return new WarehouseService(new WarehouseModel());
+    }
+
+    public static function stockTransferService(bool $getShared = true): StockTransferService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('stockTransferService');
+        }
+
+        return new StockTransferService(
+            new StockTransferModel(),
+            new StockTransferLineModel(),
+            new WarehouseModel(),
+            static::inventoryService(),
+        );
+    }
+
+    public static function stocktakeService(bool $getShared = true): StocktakeService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('stocktakeService');
+        }
+
+        return new StocktakeService(
+            new StocktakeModel(),
+            new StocktakeLineModel(),
+            static::inventoryService(),
         );
     }
 

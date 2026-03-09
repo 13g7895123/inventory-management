@@ -9,7 +9,7 @@ use CodeIgniter\Model;
 
 class InventoryModel extends Model
 {
-    protected $table         = 'inventories';
+    protected $table         = 'inventory';
     protected $primaryKey    = 'id';
     protected $returnType    = Inventory::class;
     protected $useSoftDeletes = false;   // 庫存記錄不使用軟刪除
