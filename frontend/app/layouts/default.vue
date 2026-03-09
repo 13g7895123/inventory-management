@@ -3,7 +3,13 @@
 // 後台主佈局：側邊欄 + 頂部導覽列 + 內容區
 
 const authStore = useAuthStore()
+const invStore  = useInventoryStore()
 const router    = useRouter()
+
+// 載入低庫存計數（每次掛載更新）
+onMounted(() => invStore.fetchLowStock())
+
+const lowStockCount = computed(() => invStore.lowStockItems.length)
 
 interface NavItem {
   label: string
@@ -20,10 +26,12 @@ const navItems: NavItem[] = [
     icon:  'Boxes',
     to:    '/inventory',
     children: [
-      { label: '庫存查詢',   icon: 'Search',      to: '/inventory' },
-      { label: '庫存異動日誌', icon: 'History',   to: '/inventory/transactions' },
-      { label: '庫存調撥',   icon: 'ArrowLeftRight', to: '/inventory/transfers' },
-      { label: '盤點管理',   icon: 'ClipboardList', to: '/inventory/stocktakes' },
+      { label: '庫存查詢',    icon: 'Search',         to: '/inventory' },
+      { label: '庫存異動日誌', icon: 'History',        to: '/inventory/transactions' },
+      { label: '庫存調撥',    icon: 'ArrowLeftRight',  to: '/inventory/transfers' },
+      { label: '盤點管理',    icon: 'ClipboardList',   to: '/inventory/stocktakes' },
+      { label: '安全庫存設定', icon: 'ShieldAlert',    to: '/inventory/safety-stock' },
+      { label: '批號/序號追蹤', icon: 'Fingerprint',   to: '/inventory/batch-serials' },
     ],
   },
   {
@@ -90,6 +98,13 @@ async function handleLogout() {
           <details v-else class="group">
             <summary class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent list-none">
               <span class="flex-1">{{ item.label }}</span>
+              <!-- 低庫存警示徽章 -->
+              <span
+                v-if="item.to === '/inventory' && lowStockCount > 0"
+                class="inline-flex items-center justify-center min-w-[1.25rem] h-5 rounded-full bg-red-500 text-[10px] font-bold text-white px-1"
+              >
+                {{ lowStockCount > 99 ? '99+' : lowStockCount }}
+              </span>
               <span class="transition-transform group-open:rotate-90">›</span>
             </summary>
             <div class="ml-4 mt-1 space-y-1">

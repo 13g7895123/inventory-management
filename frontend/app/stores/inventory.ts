@@ -80,7 +80,7 @@ export const useInventoryStore = defineStore('inventory', {
       this.error = null
       try {
         const { get } = useApi()
-        const res = await get<{ data: InventoryTransaction[]; total: number }>('/inventory-transactions', params)
+        const res = await get<{ data: InventoryTransaction[]; total: number; page: number }>('/inventory-transactions', params)
         this.transactions = res.data?.data ?? []
       } catch (e: unknown) {
         this.error = e instanceof Error ? e.message : '載入異動日誌失敗'

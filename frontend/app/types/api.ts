@@ -650,3 +650,29 @@ export interface AuthUser {
   role: string
   permissions?: string[]
 }
+
+// ── 批號 / 序號 ────────────────────────────────────────────────────
+
+export type BatchSerialType   = 'batch' | 'serial'
+export type BatchSerialStatus = 'available' | 'reserved' | 'consumed' | 'expired'
+
+export interface BatchSerial {
+  id: number
+  sku_id: number
+  warehouse_id: number
+  goods_receipt_line_id: number | null
+  type: BatchSerialType
+  batch_number: string
+  serial_number: string | null
+  quantity: number
+  unit_cost: number
+  manufactured_date: string | null
+  expiry_date: string | null
+  status: BatchSerialStatus
+  created_at: string
+  updated_at: string
+  // 關聯欄位
+  sku_code?: string
+  item_name?: string
+  warehouse_name?: string
+}

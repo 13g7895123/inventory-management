@@ -46,6 +46,13 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], static funct
         $routes->get('skus/(:num)/inventories',        'Inventory\InventoryController::bySku/$1');
         $routes->post('inventories/adjust',            'Inventory\InventoryController::adjust');
 
+        // ── 庫存異動日誌 ───────────────────────────────────
+        $routes->get('inventory-transactions',         'Inventory\InventoryTransactionController::index');
+
+        // ── 批號 / 序號追蹤 ────────────────────────────────
+        $routes->get('batch-serials',                  'Inventory\BatchSerialController::index');
+        $routes->get('batch-serials/(:num)',            'Inventory\BatchSerialController::show/$1');
+
         // ── 庫存調撥 ──────────────────────────────────────
         $routes->get('stock-transfers',                       'Inventory\StockTransferController::index');
         $routes->post('stock-transfers',                      'Inventory\StockTransferController::create');
