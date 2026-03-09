@@ -289,28 +289,147 @@ export interface PurchaseReturnLineForm {
   received_qty?: number
 }
 
+// ── 客戶 ──────────────────────────────────────────────────────────
+
+export interface Customer {
+  id: number
+  code: string
+  name: string
+  tax_id: string | null
+  contact_name: string | null
+  contact_phone: string | null
+  contact_email: string | null
+  credit_limit: number
+  payment_terms: string | null
+  notes: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface CustomerAddress {
+  id: number
+  customer_id: number
+  label: string | null
+  contact_name: string | null
+  contact_phone: string | null
+  address_line1: string
+  address_line2: string | null
+  city: string | null
+  postal_code: string | null
+  country: string
+  is_default: boolean
+  created_at: string
+  updated_at: string
+}
+
+// ── 銷售訂單 ──────────────────────────────────────────────────────
+
+export type SalesOrderStatus = 'draft' | 'confirmed' | 'partial' | 'shipped' | 'cancelled'
+
 export interface SalesOrder {
   id: number
   so_number: string
   customer_id: number
-  status: 'DRAFT' | 'CONFIRMED' | 'PARTIAL' | 'SHIPPED' | 'CANCELLED'
-  requested_ship_date: string
+  warehouse_id: number
+  status: SalesOrderStatus
+  shipping_address_id: number | null
+  shipping_name: string | null
+  shipping_phone: string | null
+  shipping_address: string | null
+  order_date: string
+  expected_ship_date: string | null
+  tax_rate: number
+  subtotal: number
+  tax_amount: number
   total_amount: number
+  discount_amount: number
+  is_dropship: boolean
+  notes: string | null
   created_by: number
+  confirmed_by: number | null
+  confirmed_at: string | null
+  closed_at: string | null
+  created_at: string
+  updated_at: string
+  // 關聯欄位（後端可能附帶）
   customer_name?: string
-  line_items?: SalesOrderLine[]
+  lines?: SalesOrderLine[]
 }
 
 export interface SalesOrderLine {
   id: number
-  so_id: number
+  sales_order_id: number
   sku_id: number
-  warehouse_id: number
   ordered_qty: number
   shipped_qty: number
   unit_price: number
+  discount_rate: number
+  line_total: number
+  notes: string | null
+  // 關聯欄位
   sku_code?: string
   item_name?: string
+}
+
+export interface SalesOrderLineForm {
+  sku_id: number
+  ordered_qty: number
+  unit_price: number
+  discount_rate?: number
+  notes?: string
+  // 顯示用
+  sku_code?: string
+  item_name?: string
+}
+
+// ── 出貨單 ────────────────────────────────────────────────────────
+
+export type ShipmentStatus = 'pending' | 'shipped' | 'cancelled'
+
+export interface Shipment {
+  id: number
+  shipment_number: string
+  sales_order_id: number
+  warehouse_id: number
+  status: ShipmentStatus
+  carrier: string | null
+  tracking_number: string | null
+  shipped_at: string | null
+  notes: string | null
+  created_by: number
+  created_at: string
+  updated_at: string
+  // 關聯欄位
+  so_number?: string
+  customer_name?: string
+}
+
+export interface ShipmentLine {
+  id: number
+  shipment_id: number
+  sales_order_line_id: number
+  sku_id: number
+  shipped_qty: number
+  batch_number: string | null
+  notes: string | null
+  // 關聯欄位
+  sku_code?: string
+  item_name?: string
+}
+
+export interface ShipmentLineForm {
+  sales_order_line_id: number
+  sku_id: number
+  shipped_qty: number
+  batch_number?: string
+  notes?: string
+  // 顯示用
+  sku_code?: string
+  item_name?: string
+  ordered_qty?: number
+  shipped_qty_so_far?: number
+  pending_qty?: number
 }
 
 // ── Auth ──────────────────────────────────────────────────────────
