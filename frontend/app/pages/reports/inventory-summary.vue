@@ -1,6 +1,8 @@
 <script setup lang="ts">
 // pages/reports/inventory-summary.vue — 進銷存彙總表（T15-3）
 
+definePageMeta({ layout: 'default' })
+
 import type { InventorySummaryItem } from '~/app/types/api'
 
 const reportsStore   = useReportsStore()

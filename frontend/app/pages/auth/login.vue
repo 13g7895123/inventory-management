@@ -43,6 +43,8 @@ onMounted(() => {
     router.replace('/dashboard')
   }
 })
+
+const currentYear = new Date().getFullYear()
 </script>
 
 <template>
@@ -121,7 +123,7 @@ onMounted(() => {
     </div>
 
     <p class="text-center text-xs text-muted-foreground">
-      © {{ new Date().getFullYear() }} 進銷存管理系統
+      © {{ currentYear }} 進銷存管理系統
     </p>
   </div>
 </template>

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 // pages/reports/sales.vue — 銷售業績報表（T15-4）
 
+definePageMeta({ layout: 'default' })
+
 import type { SalesReportSkuItem, SalesReportCustomerItem } from '~/app/types/api'
 
 const reportsStore  = useReportsStore()

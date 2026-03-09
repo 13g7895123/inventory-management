@@ -411,7 +411,6 @@ function openPdf() {
           </div>
         </div>
       </div>
-    </template>
 
       <!-- ── 付款狀態 ──────────────────────────────────────────────── -->
       <template v-if="poStore.current.status !== 'draft' && poStore.current.status !== 'cancelled'">

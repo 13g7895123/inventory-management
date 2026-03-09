@@ -1,6 +1,8 @@
 <script setup lang="ts">
 // pages/reports/purchase.vue — 採購報表（T15-6）
 
+definePageMeta({ layout: 'default' })
+
 import type { PurchaseReportSupplierItem, PurchaseReportItemItem } from '~/app/types/api'
 
 const reportsStore  = useReportsStore()

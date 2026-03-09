@@ -11,7 +11,7 @@ interface WarehouseState {
   error: string | null
 }
 
-export const useWarehouseStore = defineStore('warehouses', {
+export const useWarehousesStore = defineStore('warehouses', {
   state: (): WarehouseState => ({
     warehouses: [],
     pagination: null,

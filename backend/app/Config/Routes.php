@@ -11,6 +11,9 @@ use CodeIgniter\Router\RouteCollection;
 // ── API v1 ────────────────────────────────────────────────────────
 $routes->group('api/v1', ['namespace' => 'App\Controllers\Api\V1'], static function ($routes) {
 
+    // Health Check
+    $routes->get('health', 'HealthController::index');
+
     // 認證（無需 JWT）
     $routes->post('auth/login',   'Auth\AuthController::login');
     $routes->post('auth/refresh', 'Auth\AuthController::refresh');

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 // pages/reports/index.vue — 報表中心（T15 導覽頁）
 
+definePageMeta({ layout: 'default' })
+
 const reports = [
   {
     title:       '進銷存彙總表',

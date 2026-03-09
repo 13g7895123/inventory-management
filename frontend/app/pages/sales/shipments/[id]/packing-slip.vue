@@ -6,7 +6,12 @@ const shipStore = useShipmentStore()
 
 const id = computed(() => Number(route.params.id))
 
-onMounted(() => shipStore.fetchOne(id.value))
+const printTime = ref('')
+
+onMounted(() => {
+  shipStore.fetchOne(id.value)
+  printTime.value = new Date().toLocaleString('zh-TW')
+})
 
 const ship  = computed(() => shipStore.current)
 const lines = computed(() => shipStore.currentLines)
@@ -164,7 +169,7 @@ function printPage() {
 
         <!-- 頁尾 -->
         <div class="border-t pt-4 text-xs text-gray-400 text-center">
-          列印時間：{{ new Date().toLocaleString('zh-TW') }}
+          列印時間：{{ printTime }}
         </div>
       </div>
     </div>

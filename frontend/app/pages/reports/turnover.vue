@@ -1,6 +1,8 @@
 <script setup lang="ts">
 // pages/reports/turnover.vue — 庫存週轉率（T14-5 前端）
 
+definePageMeta({ layout: 'default' })
+
 import type { TurnoverRateItem } from '~/app/types/api'
 
 const reportsStore  = useReportsStore()

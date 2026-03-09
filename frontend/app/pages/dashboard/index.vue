@@ -2,9 +2,13 @@
 // 儀表板首頁 — Sprint 14/15：KPI 卡片 + 銷售趨勢折線圖
 // auth.global.ts 全域 middleware 已保護此頁
 
+definePageMeta({ layout: 'default' })
+
 const authStore    = useAuthStore()
 const invStore     = useInventoryStore()
 const reportsStore = useReportsStore()
+
+const today = computed(() => new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }))
 
 onMounted(async () => {
   await Promise.all([
@@ -124,7 +128,7 @@ function onMouseLeave() {
         歡迎回來，{{ authStore.user?.name ?? '使用者' }}
       </h1>
       <p class="mt-1 text-sm text-muted-foreground">
-        {{ new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }) }}
+        {{ today }}
       </p>
     </div>
 

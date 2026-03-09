@@ -33,6 +33,10 @@ if (! file_exists(ROOTPATH . 'vendor/autoload.php')) {
 require_once ROOTPATH . 'vendor/autoload.php';
 
 /*
- * 啟動 CodeIgniter 4 框架
+ * 啟動 CodeIgniter 4 框架（CI4 >= 4.5.0 新格式）
  */
-require_once ROOTPATH . 'vendor/codeigniter4/framework/system/bootstrap.php';
+require_once ROOTPATH . 'app/Config/Paths.php';
+
+$paths = new Config\Paths();
+
+CodeIgniter\Boot::bootWeb($paths);

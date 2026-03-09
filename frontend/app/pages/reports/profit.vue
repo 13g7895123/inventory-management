@@ -1,6 +1,8 @@
 <script setup lang="ts">
 // pages/reports/profit.vue — 毛利分析報表（T15-5）
 
+definePageMeta({ layout: 'default' })
+
 import type { ProfitDailyItem, ProfitSkuItem } from '~/app/types/api'
 
 const reportsStore = useReportsStore()

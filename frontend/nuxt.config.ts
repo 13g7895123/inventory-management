@@ -30,7 +30,7 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost/api/v1',
+      apiBase: 'http://localhost/api/v1',
     },
   },
 
@@ -56,6 +56,17 @@ export default defineNuxtConfig({
   typescript: {
     strict: true,
     typeCheck: false,
+  },
+
+  devServer: {
+    port: 3101,
+    host: '0.0.0.0',
+  },
+
+  vite: {
+    server: {
+      allowedHosts: ['inventory.l'],
+    },
   },
 
   compatibilityDate: '2024-11-01',
