@@ -38,7 +38,15 @@ const navItems: NavItem[] = [
   },
   { label: '倉庫管理', icon: 'Warehouse',  to: '/warehouses' },
   { label: '報表中心', icon: 'BarChart2',  to: '/reports' },
-  { label: '基礎資料', icon: 'Settings',   to: '/master' },
+  {
+    label: '基礎資料',
+    icon:  'Settings',
+    to:    '/master',
+    children: [
+      { label: '商品分類', icon: 'Tag',      to: '/master/categories' },
+      { label: '計量單位', icon: 'Ruler',    to: '/master/units' },
+    ],
+  },
 ]
 
 async function handleLogout() {

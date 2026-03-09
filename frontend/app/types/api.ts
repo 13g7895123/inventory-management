@@ -25,6 +25,36 @@ export interface Pagination {
 
 // ── Domain Types ──────────────────────────────────────────────────
 
+export interface Category {
+  id: number
+  parent_id: number | null
+  name: string
+  slug: string
+  description: string | null
+  sort_order: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  children?: Category[]
+}
+
+export interface Unit {
+  id: number
+  name: string
+  symbol: string
+  description: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ItemSkuForm {
+  sku_code: string
+  attributes: Record<string, string>
+  cost_price: number
+  selling_price: number
+}
+
 export interface Item {
   id: number
   category_id: number
@@ -32,6 +62,7 @@ export interface Item {
   code: string
   name: string
   description: string | null
+  tax_type: 'taxable' | 'zero' | 'exempt'
   reorder_point: number
   safety_stock: number
   lead_time_days: number
@@ -39,6 +70,7 @@ export interface Item {
   is_active: boolean
   category_name?: string
   unit_name?: string
+  skus?: ItemSku[]
   created_at: string
   updated_at: string
 }
@@ -49,7 +81,12 @@ export interface ItemSku {
   sku_code: string
   barcode: string | null
   attributes: Record<string, string>
+  cost_price: number
+  selling_price: number
+  is_active: boolean
   item_name?: string
+  created_at: string
+  updated_at: string
 }
 
 export interface Inventory {
