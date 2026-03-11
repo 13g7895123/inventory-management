@@ -1,8 +1,8 @@
 <script setup lang="ts">
-// 儀表板首頁 — Sprint 14/15：KPI 卡片 + 銷售趨勢折線圖
-// auth.global.ts 全域 middleware 已保護此頁
-
+// 儀表板首頁 — Sprint 14/15 改版
 definePageMeta({ layout: 'default' })
+
+import { ClipboardList, ShoppingCart, AlertTriangle, DollarSign, TrendingUp, Calendar, ArrowRight } from 'lucide-vue-next'
 
 const authStore    = useAuthStore()
 const invStore     = useInventoryStore()
@@ -27,29 +27,29 @@ const kpiCards = computed(() => [
   {
     label:  '待確認銷售單',
     value:  kpi.value ? String(kpi.value.pending_sales_orders) : '—',
-    icon:   '📋',
-    color:  'text-amber-600',
+    icon:   ClipboardList,
+    class:  'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400',
     link:   '/sales/orders',
   },
   {
     label:  '待審核採購單',
     value:  kpi.value ? String(kpi.value.pending_purchase_orders) : '—',
-    icon:   '🛒',
-    color:  'text-blue-600',
+    icon:   ShoppingCart,
+    class:  'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400',
     link:   '/purchase/orders',
   },
   {
     label:  '低庫存品項',
     value:  kpi.value ? String(kpi.value.low_stock_count) : '—',
-    icon:   '⚠️',
-    color:  kpi.value && kpi.value.low_stock_count > 0 ? 'text-red-600 animate-pulse' : 'text-muted-foreground',
+    icon:   AlertTriangle,
+    class:  kpi.value && kpi.value.low_stock_count > 0 ? 'bg-red-50 text-red-600 animate-pulse dark:bg-red-950/40 dark:text-red-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
     link:   '/inventory',
   },
   {
     label:  '本月銷售額',
     value:  kpi.value ? formatCurrency(kpi.value.monthly_sales_amount) : '—',
-    icon:   '💰',
-    color:  'text-green-600',
+    icon:   DollarSign,
+    class:  'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400',
     link:   '/reports/sales',
   },
 ])
@@ -57,18 +57,18 @@ const kpiCards = computed(() => [
 // ── 折線圖運算 ────────────────────────────────────────────────────
 const trendData = computed(() => reportsStore.salesTrend)
 
-const chartWidth  = 700
-const chartHeight = 200
-const padLeft     = 50
-const padRight    = 10
-const padTop      = 10
+const chartWidth  = 800
+const chartHeight = 280
+const padLeft     = 60
+const padRight    = 20
+const padTop      = 20
 const padBottom   = 30
 
 const chartPoints = computed(() => {
   const data = trendData.value
   if (data.length === 0) return []
 
-  const maxVal = Math.max(...data.map(d => d.amount), 1)
+  const maxVal = Math.max(...data.map(d => d.amount), 1000)
   const n      = data.length
 
   return data.map((d, i) => ({
@@ -80,18 +80,36 @@ const chartPoints = computed(() => {
   }))
 })
 
+// Generate SVG Path command for smooth area
+const areaPath = computed(() => {
+  if (chartPoints.value.length === 0) return ''
+  const points = chartPoints.value
+  const first = points[0]
+  const last = points[points.length - 1]
+  
+  let path = `M ${first.x} ${first.y}`
+  points.forEach(p => { path += ` L ${p.x} ${p.y}` })
+  
+  // Close the area
+  path += ` L ${last.x} ${chartHeight - padBottom} L ${first.x} ${chartHeight - padBottom} Z`
+  return path
+})
+
+
 const polyline = computed(() =>
   chartPoints.value.map(p => `${p.x},${p.y}`).join(' ')
 )
 
 const yLabels = computed(() => {
   const data   = trendData.value
-  const maxVal = Math.max(...data.map(d => d.amount), 1)
-  const steps  = 4
+  const maxVal = Math.max(...data.map(d => d.amount), 1000)
+  const steps  = 5
   return Array.from({ length: steps + 1 }, (_, i) => {
     const val = (maxVal * i) / steps
     const y   = padTop + (1 - i / steps) * (chartHeight - padTop - padBottom)
-    return { y, label: val >= 10000 ? `${(val / 10000).toFixed(1)}萬` : String(Math.round(val)) }
+    let label = String(Math.round(val))
+    if (val >= 10000) label = `${(val / 10000).toFixed(1)}萬`
+    return { y, label }
   })
 })
 
@@ -99,171 +117,146 @@ const xLabels = computed(() => {
   const data = trendData.value
   if (data.length === 0) return []
   const total = data.length
-  const step  = Math.max(1, Math.floor(total / 6))
+  // Show roughly 6-8 labels
+  const step  = Math.max(1, Math.floor(total / 7)) 
+  
   return data
     .filter((_, i) => i % step === 0 || i === total - 1)
-    .map((d, _, arr) => {
+    .map((d) => {
       const origIndex = data.indexOf(d)
       const x = padLeft + (origIndex / (total - 1 || 1)) * (chartWidth - padLeft - padRight)
-      return { x, label: d.date.slice(5) } // MM-DD
+       // Format as M/D
+      const dateStr = d.date.split('-').slice(1).join('/')
+      return { x, label: dateStr } 
     })
 })
 
-// Tooltip 狀態
-const tooltip = ref<{ x: number; y: number; date: string; amount: number; count: number } | null>(null)
-
-function onMouseEnter(pt: typeof chartPoints.value[0]) {
-  tooltip.value = pt
-}
-function onMouseLeave() {
-  tooltip.value = null
-}
+const hoveredPoint = ref<any>(null)
 </script>
 
 <template>
-  <div class="space-y-6">
-    <!-- 歡迎列 -->
-    <div>
-      <h1 class="text-2xl font-semibold">
-        歡迎回來，{{ authStore.user?.name ?? '使用者' }}
-      </h1>
-      <p class="mt-1 text-sm text-muted-foreground">
-        {{ today }}
-      </p>
+  <div class="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <!-- Welcome Header -->
+    <div class="flex flex-col gap-2">
+       <h1 class="text-3xl font-bold tracking-tight text-foreground">儀表板</h1>
+       <p class="text-muted-foreground flex items-center gap-2">
+          <Calendar class="w-4 h-4" />
+          {{ today }}
+       </p>
     </div>
 
-    <!-- KPI 卡片 -->
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <component
-        :is="card.link ? 'NuxtLink' : 'div'"
-        v-for="card in kpiCards"
-        :key="card.label"
-        :to="card.link ?? undefined"
-        class="rounded-xl border bg-card p-5 shadow-sm"
-        :class="card.link ? 'hover:border-primary/40 transition-colors cursor-pointer' : ''"
-      >
-        <div class="flex items-center justify-between">
-          <p class="text-sm font-medium text-muted-foreground">{{ card.label }}</p>
-          <span class="text-2xl">{{ card.icon }}</span>
-        </div>
-        <p :class="['mt-2 text-3xl font-bold', card.color]">{{ card.value }}</p>
-      </component>
-    </div>
-
-    <!-- 近 30 天銷售趨勢折線圖（T15-2） -->
-    <div class="rounded-xl border bg-card p-5 shadow-sm">
-      <div class="mb-4 flex items-center justify-between">
-        <h2 class="text-base font-semibold">近 30 天銷售趨勢</h2>
-        <NuxtLink to="/reports/sales" class="text-xs text-primary hover:underline">查看完整報表 →</NuxtLink>
-      </div>
-
-      <div v-if="reportsStore.loading" class="flex h-48 items-center justify-center text-muted-foreground text-sm">
-        載入中…
-      </div>
-      <div v-else-if="trendData.length === 0" class="flex h-48 items-center justify-center text-muted-foreground text-sm">
-        本期間無銷售資料
-      </div>
-      <div v-else class="relative overflow-x-auto">
-        <svg
-          :viewBox="`0 0 ${chartWidth} ${chartHeight}`"
-          class="w-full"
-          :style="`height:${chartHeight}px`"
-          @mouseleave="onMouseLeave"
-        >
-          <!-- 格線 -->
-          <line
-            v-for="label in yLabels"
-            :key="label.y"
-            :x1="padLeft"
-            :y1="label.y"
-            :x2="chartWidth - padRight"
-            :y2="label.y"
-            class="stroke-border"
-            stroke-dasharray="3,3"
-          />
-
-          <!-- Y 軸標籤 -->
-          <text
-            v-for="label in yLabels"
-            :key="'y' + label.y"
-            :x="padLeft - 4"
-            :y="label.y + 4"
-            text-anchor="end"
-            class="fill-muted-foreground text-[10px]"
-            font-size="10"
-          >{{ label.label }}</text>
-
-          <!-- X 軸標籤 -->
-          <text
-            v-for="label in xLabels"
-            :key="'x' + label.x"
-            :x="label.x"
-            :y="chartHeight - 4"
-            text-anchor="middle"
-            class="fill-muted-foreground text-[10px]"
-            font-size="10"
-          >{{ label.label }}</text>
-
-          <!-- 折線填充區域 -->
-          <polygon
-            v-if="chartPoints.length"
-            :points="`${padLeft},${chartHeight - padBottom} ${polyline} ${chartWidth - padRight},${chartHeight - padBottom}`"
-            fill="hsl(var(--primary) / 0.08)"
-          />
-
-          <!-- 折線 -->
-          <polyline
-            v-if="chartPoints.length"
-            :points="polyline"
-            fill="none"
-            stroke="hsl(var(--primary))"
-            stroke-width="2"
-            stroke-linejoin="round"
-            stroke-linecap="round"
-          />
-
-          <!-- 資料點（可 hover） -->
-          <circle
-            v-for="pt in chartPoints"
-            :key="pt.date"
-            :cx="pt.x"
-            :cy="pt.y"
-            r="4"
-            fill="hsl(var(--primary))"
-            class="cursor-pointer opacity-0 hover:opacity-100 transition-opacity"
-            @mouseenter="onMouseEnter(pt)"
-          />
-        </svg>
-
-        <!-- Tooltip -->
-        <div
-          v-if="tooltip"
-          class="pointer-events-none absolute z-10 rounded-lg border bg-popover px-3 py-2 text-xs shadow-lg"
-          :style="{ left: `${tooltip.x}px`, top: `${tooltip.y - 60}px`, transform: 'translateX(-50%)' }"
-        >
-          <p class="font-medium">{{ tooltip.date }}</p>
-          <p class="text-muted-foreground">訂單數：{{ tooltip.count }}</p>
-          <p class="text-primary font-semibold">{{ formatCurrency(tooltip.amount) }}</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- 快捷入口 -->
-    <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <!-- KPI Cards Grid -->
+    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
       <NuxtLink
-        v-for="item in [
-          { label: '進銷存彙總', to: '/reports/inventory-summary', icon: '📦' },
-          { label: '銷售業績',   to: '/reports/sales',             icon: '📈' },
-          { label: '毛利分析',   to: '/reports/profit',            icon: '💹' },
-          { label: '採購報表',   to: '/reports/purchase',          icon: '🏭' },
-        ]"
-        :key="item.label"
-        :to="item.to"
-        class="flex flex-col items-center gap-1 rounded-xl border bg-card p-4 text-center shadow-sm hover:border-primary/40 transition-colors"
+        v-for="(card, i) in kpiCards"
+        :key="i"
+        :to="card.link"
+        class="group relative overflow-hidden rounded-xl border bg-card p-6 shadow-sm transition-all hover:shadow-md hover:border-primary/20 hover:-translate-y-1"
       >
-        <span class="text-2xl">{{ item.icon }}</span>
-        <span class="text-xs font-medium">{{ item.label }}</span>
+        <div class="flex items-start justify-between">
+          <div>
+            <p class="text-sm font-medium text-muted-foreground group-hover:text-primary transition-colors">{{ card.label }}</p>
+            <div class="mt-4 flex items-baseline gap-1">
+              <span class="text-2xl font-bold tracking-tight text-foreground">{{ card.value }}</span>
+            </div>
+          </div>
+          <div :class="['p-3 rounded-xl transition-transform group-hover:scale-110', card.class]">
+            <component :is="card.icon" class="h-5 w-5" />
+          </div>
+        </div>
+        
+        <!-- Decorative bg circle -->
+        <div class="absolute -right-6 -bottom-6 w-24 h-24 rounded-full opacity-[0.03] bg-current pointer-events-none group-hover:scale-150 transition-transform duration-500" :class="card.class.split(' ')[1]"></div>
       </NuxtLink>
+    </div>
+
+    <!-- Chart Section -->
+    <div class="grid gap-6 grid-cols-1">
+      <div class="rounded-xl border bg-card text-card-foreground shadow-sm">
+        <div class="p-6 border-b flex items-center justify-between">
+           <div>
+             <h3 class="font-semibold text-lg flex items-center gap-2">
+               <TrendingUp class="w-5 h-5 text-primary" />
+               銷售趨勢分析
+             </h3>
+             <p class="text-sm text-muted-foreground mt-1">近 30 天每日銷售金額統計</p>
+           </div>
+           <!-- Legend or filters could go here -->
+        </div>
+
+        <div class="p-6">
+          <div class="w-full relative overflow-hidden" @mouseleave="hoveredPoint = null">
+            <!-- SVG Container -->
+            <svg :viewBox="`0 0 ${chartWidth} ${chartHeight}`" class="w-full h-auto max-h-[400px]" preserveAspectRatio="xMidYMid meet">
+              <defs>
+                <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="hsl(var(--primary))" stop-opacity="0.25"/>
+                  <stop offset="100%" stop-color="hsl(var(--primary))" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+
+              <!-- Grid -->
+              <g class="stroke-border stroke-[1] stroke-dasharray-4">
+                 <line v-for="yl in yLabels" :key="yl.y" :x1="padLeft" :y1="yl.y" :x2="chartWidth - padRight" :y2="yl.y" />
+              </g>
+
+              <!-- Area -->
+              <path :d="areaPath" fill="url(#chartGradient)" class="transition-all duration-300" />
+
+              <!-- Line -->
+              <polyline
+                :points="polyline"
+                fill="none"
+                class="stroke-primary stroke-[3]"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+
+              <!-- Hover Interaction Area & Tooltip Logic -->
+              <g v-for="(p, i) in chartPoints" :key="i" class="group/point">
+                 <!-- Invisible hit area (larger) -->
+                 <rect 
+                    :x="p.x - (chartWidth / chartPoints.length / 2)" 
+                    :y="padTop" 
+                    :width="chartWidth / chartPoints.length" 
+                    :height="chartHeight - padBottom - padTop" 
+                    fill="transparent" 
+                    @mouseenter="hoveredPoint = p"
+                 />
+                 
+                 <!-- Visible Dot -->
+                 <circle 
+                   :cx="p.x" 
+                   :cy="p.y" 
+                   r="5" 
+                   class="fill-background stroke-primary stroke-[3] transition-opacity pointer-events-none" 
+                   :class="hoveredPoint === p ? 'opacity-100' : 'opacity-0'" 
+                 />
+              </g>
+
+              <!-- Axes -->
+              <line :x1="padLeft" :y1="padTop" :x2="padLeft" :y2="chartHeight - padBottom" class="stroke-border stroke-[2]" />
+              <line :x1="padLeft" :y1="chartHeight - padBottom" :x2="chartWidth - padRight" :y2="chartHeight - padBottom" class="stroke-border stroke-[2]" />
+
+              <!-- Labels -->
+              <text v-for="yl in yLabels" :key="yl.y" :x="padLeft - 10" :y="yl.y + 4" text-anchor="end" class="text-[11px] fill-muted-foreground font-medium select-none">{{ yl.label }}</text>
+              <text v-for="xl in xLabels" :key="xl.x" :x="xl.x" :y="chartHeight - 10" text-anchor="middle" class="text-[11px] fill-muted-foreground font-medium select-none">{{ xl.label }}</text>
+            </svg>
+            
+            <!-- Floating Tooltip (HTML overlay on top of SVG) -->
+            <div v-if="hoveredPoint"
+                 class="absolute pointer-events-none bg-popover text-popover-foreground border shadow-lg rounded-lg p-3 text-sm z-10 transform -translate-x-1/2 -translate-y-[130%]"
+                 :style="{ left: (hoveredPoint.x / chartWidth * 100) + '%', top: (hoveredPoint.y / chartHeight * 100) + '%' }"
+            >
+               <div class="font-bold mb-1">{{ hoveredPoint.date }}</div>
+               <div class="flex items-center gap-2 text-primary font-mono font-bold">
+                 <span>{{ formatCurrency(hoveredPoint.amount) }}</span>
+               </div>
+               <div class="text-xs text-muted-foreground mt-1">訂單數: {{ hoveredPoint.count }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>

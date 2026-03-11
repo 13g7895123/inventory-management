@@ -5,7 +5,7 @@ export default defineNuxtRouteMiddleware((to) => {
   const authStore = useAuthStore()
 
   // 登入頁：已登入則導向後台首頁
-  if (to.path === '/auth/login') {
+  if (to.path === '/login') {
     if (authStore.isAuthenticated) {
       return navigateTo('/dashboard')
     }
@@ -20,7 +20,7 @@ export default defineNuxtRouteMiddleware((to) => {
   // 其他頁面：未登入則導向登入頁，並記錄原目標路由
   if (! authStore.isAuthenticated) {
     return navigateTo({
-      path:  '/auth/login',
+      path:  '/login',
       query: { redirect: to.fullPath },
     })
   }
