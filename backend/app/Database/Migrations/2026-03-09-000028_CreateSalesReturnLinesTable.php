@@ -15,26 +15,26 @@ class CreateSalesReturnLinesTable extends Migration
     {
         $this->forge->addField([
             'id' => [
-                'type'           => 'INT',
+                'type'           => 'BIGINT',
                 'constraint'     => 11,
                 'unsigned'       => true,
                 'auto_increment' => true,
             ],
             'sales_return_id' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,
             ],
             'sales_order_line_id' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,
                 'comment'    => '對應的銷售訂單明細',
             ],
             'sku_id' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,

@@ -20,9 +20,12 @@ use CodeIgniter\HTTP\ResponseInterface;
  */
 class SalesReturnController extends BaseApiController
 {
-    public function __construct(
-        private readonly SalesReturnService $returnService,
-    ) {}
+    private SalesReturnService $returnService;
+
+    public function __construct()
+    {
+        $this->returnService = \Config\Services::salesReturnService();
+    }
 
     /**
      * GET /api/v1/sales-orders/:orderId/returns

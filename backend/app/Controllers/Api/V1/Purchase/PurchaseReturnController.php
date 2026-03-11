@@ -20,9 +20,12 @@ use CodeIgniter\HTTP\ResponseInterface;
  */
 class PurchaseReturnController extends BaseApiController
 {
-    public function __construct(
-        private readonly PurchaseReturnService $returnService,
-    ) {}
+    private PurchaseReturnService $returnService;
+
+    public function __construct()
+    {
+        $this->returnService = \Config\Services::purchaseReturnService();
+    }
 
     /**
      * GET /api/v1/purchase-orders/:orderId/returns

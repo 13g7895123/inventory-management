@@ -12,7 +12,7 @@ class CreatePurchaseOrdersTable extends Migration
     {
         $this->forge->addField([
             'id' => [
-                'type'           => 'INT',
+                'type'           => 'BIGINT',
                 'constraint'     => 11,
                 'unsigned'       => true,
                 'auto_increment' => true,
@@ -24,13 +24,13 @@ class CreatePurchaseOrdersTable extends Migration
                 'comment'    => '採購單號，格式 PO-YYYYMMDD-NNNN',
             ],
             'supplier_id' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,
             ],
             'warehouse_id' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,
@@ -72,7 +72,7 @@ class CreatePurchaseOrdersTable extends Migration
                 'null' => true,
             ],
             'approved_by' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => true,
@@ -82,7 +82,7 @@ class CreatePurchaseOrdersTable extends Migration
                 'null' => true,
             ],
             'created_by' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,

@@ -12,19 +12,19 @@ class CreatePurchaseOrderLinesTable extends Migration
     {
         $this->forge->addField([
             'id' => [
-                'type'           => 'INT',
+                'type'           => 'BIGINT',
                 'constraint'     => 11,
                 'unsigned'       => true,
                 'auto_increment' => true,
             ],
             'purchase_order_id' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,
             ],
             'sku_id' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,

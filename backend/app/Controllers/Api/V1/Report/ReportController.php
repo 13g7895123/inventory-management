@@ -25,9 +25,11 @@ use CodeIgniter\HTTP\ResponseInterface;
  */
 class ReportController extends BaseApiController
 {
-    public function __construct(
-        private readonly ReportService $reportService,
-    ) {
+    private ReportService $reportService;
+
+    public function __construct()
+    {
+        $this->reportService = \Config\Services::reportService();
     }
 
     // ── T15-1  儀表板 KPI ────────────────────────────────────────

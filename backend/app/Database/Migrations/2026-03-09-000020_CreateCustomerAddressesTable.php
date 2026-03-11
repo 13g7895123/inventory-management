@@ -17,13 +17,13 @@ class CreateCustomerAddressesTable extends Migration
     {
         $this->forge->addField([
             'id' => [
-                'type'           => 'INT',
+                'type'           => 'BIGINT',
                 'constraint'     => 11,
                 'unsigned'       => true,
                 'auto_increment' => true,
             ],
             'customer_id' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,

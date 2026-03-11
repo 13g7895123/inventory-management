@@ -12,12 +12,15 @@ use CodeIgniter\HTTP\ResponseInterface;
 
 class ItemController extends BaseApiController
 {
-    public function __construct(
-        private readonly ItemService          $itemService,
-        private readonly ImportService        $importService,
-        private readonly ImageUploadService   $imageUploadService,
-    ) {
-        // CI4 4.4+ 支援 Controller 建構子注入（透過 new 實例化或 Services）
+    private ItemService $itemService;
+    private ImportService $importService;
+    private ImageUploadService $imageUploadService;
+
+    public function __construct()
+    {
+        $this->itemService = \Config\Services::itemService();
+        $this->importService = \Config\Services::importService();
+        $this->imageUploadService = \Config\Services::imageUploadService();
     }
 
     /**

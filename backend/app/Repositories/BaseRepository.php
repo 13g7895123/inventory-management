@@ -79,9 +79,7 @@ abstract class BaseRepository implements RepositoryInterface
         $builder->limit($perPage, ($page - 1) * $perPage);
 
         // 透過 Model 執行（確保 returnType = Entity）
-        $data = $this->model
-            ->setBuilder($builder)
-            ->findAll();
+        $data = $this->model->findAll();
 
         return [
             'data'  => $data ?: [],

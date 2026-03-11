@@ -18,9 +18,11 @@ use CodeIgniter\HTTP\ResponseInterface;
  */
 class ShipmentController extends BaseApiController
 {
-    public function __construct(
-        private readonly ShipmentService $shipmentService,
-    ) {
+    private ShipmentService $shipmentService;
+
+    public function __construct()
+    {
+        $this->shipmentService = \Config\Services::shipmentService();
     }
 
     /**

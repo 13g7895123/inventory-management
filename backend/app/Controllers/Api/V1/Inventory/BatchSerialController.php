@@ -16,8 +16,11 @@ use CodeIgniter\HTTP\ResponseInterface;
  */
 class BatchSerialController extends BaseApiController
 {
-    public function __construct(private readonly BatchSerialModel $model)
+    protected BatchSerialModel $batchSerialModel;
+
+    public function __construct()
     {
+        $this->batchSerialModel = new BatchSerialModel();
     }
 
     /**
@@ -63,8 +66,9 @@ class BatchSerialController extends BaseApiController
     /**
      * GET /api/v1/batch-serials/:id
      */
-    public function show(int $id = 0): ResponseInterface
+    public function show($id = null): ResponseInterface
     {
+        $id  = (int) $id;
         $db  = \Config\Database::connect();
         $row = $db->table('batch_serials bs')
             ->select('bs.*, item_skus.sku_code, items.name AS item_name, warehouses.name AS warehouse_name')

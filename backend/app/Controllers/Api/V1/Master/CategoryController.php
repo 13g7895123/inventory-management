@@ -10,8 +10,11 @@ use CodeIgniter\HTTP\ResponseInterface;
 
 class CategoryController extends BaseApiController
 {
-    public function __construct(private readonly CategoryService $categoryService)
+    private CategoryService $categoryService;
+
+    public function __construct()
     {
+        $this->categoryService = \Config\Services::categoryService();
     }
 
     /**

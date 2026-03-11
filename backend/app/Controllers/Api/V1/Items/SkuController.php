@@ -10,8 +10,11 @@ use CodeIgniter\HTTP\ResponseInterface;
 
 class SkuController extends BaseApiController
 {
-    public function __construct(private readonly SkuService $skuService)
+    private SkuService $skuService;
+
+    public function __construct()
     {
+        $this->skuService = \Config\Services::skuService();
     }
 
     /**

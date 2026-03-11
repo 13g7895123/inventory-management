@@ -19,7 +19,7 @@ class CreateSalesOrdersTable extends Migration
     {
         $this->forge->addField([
             'id' => [
-                'type'           => 'INT',
+                'type'           => 'BIGINT',
                 'constraint'     => 11,
                 'unsigned'       => true,
                 'auto_increment' => true,
@@ -31,13 +31,13 @@ class CreateSalesOrdersTable extends Migration
                 'comment'    => '銷售單號，格式：SO-YYYYMMDD-NNNN',
             ],
             'customer_id' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,
             ],
             'warehouse_id' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,
@@ -50,7 +50,7 @@ class CreateSalesOrdersTable extends Migration
                 'default'    => 'draft',
             ],
             'shipping_address_id' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => true,
@@ -131,14 +131,14 @@ class CreateSalesOrdersTable extends Migration
                 'default' => null,
             ],
             'created_by' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => true,
                 'default'    => null,
             ],
             'confirmed_by' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => true,

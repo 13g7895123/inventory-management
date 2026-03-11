@@ -21,8 +21,11 @@ use CodeIgniter\HTTP\ResponseInterface;
  */
 class StocktakeController extends BaseApiController
 {
-    public function __construct(private readonly StocktakeService $stocktakeService)
+    private StocktakeService $stocktakeService;
+
+    public function __construct()
     {
+        $this->stocktakeService = \Config\Services::stocktakeService();
     }
 
     /**

@@ -25,6 +25,12 @@ use App\Models\SalesOrderLineModel;
 use App\Models\SalesOrderModel;
 use App\Models\ShipmentLineModel;
 use App\Models\ShipmentModel;
+use App\Models\PurchasePaymentModel;
+use App\Models\PurchaseReturnLineModel;
+use App\Models\PurchaseReturnModel;
+use App\Models\SalesPaymentModel;
+use App\Models\SalesReturnLineModel;
+use App\Models\SalesReturnModel;
 use App\Models\StocktakeLineModel;
 use App\Models\StocktakeModel;
 use App\Models\StockTransferLineModel;
@@ -52,12 +58,17 @@ use App\Services\InventoryService;
 use App\Services\ItemService;
 use App\Services\PurchaseOrderPdfService;
 use App\Services\PurchaseOrderService;
+use App\Services\PurchaseReturnService;
+use App\Services\ReportService;
 use App\Services\SalesOrderPdfService;
 use App\Services\SalesOrderService;
+use App\Services\SalesPaymentService;
+use App\Services\SalesReturnService;
 use App\Services\ShipmentService;
 use App\Services\SkuService;
 use App\Services\StocktakeService;
 use App\Services\StockTransferService;
+use App\Services\SupplierPaymentService;
 use App\Services\SupplierService;
 use App\Services\UnitService;
 use App\Services\WarehouseService;
@@ -409,6 +420,71 @@ class Services extends BaseService
             new StocktakeLineModel(),
             static::inventoryService(),
         );
+    }
+
+    // ── Sprint 12/13: 退貨 & 付款 & 報表 ────────────────────────────
+
+    public static function purchaseReturnService(bool $getShared = true): PurchaseReturnService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('purchaseReturnService');
+        }
+
+        return new PurchaseReturnService(
+            static::purchaseOrderRepository(),
+            static::inventoryService(),
+            new PurchaseReturnModel(),
+            new PurchaseReturnLineModel(),
+        );
+    }
+
+    public static function supplierPaymentService(bool $getShared = true): SupplierPaymentService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('supplierPaymentService');
+        }
+
+        return new SupplierPaymentService(
+            static::purchaseOrderRepository(),
+            new PurchasePaymentModel(),
+            new PurchaseOrderModel(),
+        );
+    }
+
+    public static function salesReturnService(bool $getShared = true): SalesReturnService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('salesReturnService');
+        }
+
+        return new SalesReturnService(
+            static::salesOrderRepository(),
+            static::inventoryService(),
+            new SalesReturnModel(),
+            new SalesReturnLineModel(),
+        );
+    }
+
+    public static function salesPaymentService(bool $getShared = true): SalesPaymentService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('salesPaymentService');
+        }
+
+        return new SalesPaymentService(
+            static::salesOrderRepository(),
+            new SalesPaymentModel(),
+            new SalesOrderModel(),
+        );
+    }
+
+    public static function reportService(bool $getShared = true): ReportService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('reportService');
+        }
+
+        return new ReportService();
     }
 
     // ── Listeners ────────────────────────────────────────────────────

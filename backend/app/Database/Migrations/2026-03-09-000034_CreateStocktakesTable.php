@@ -12,7 +12,7 @@ class CreateStocktakesTable extends Migration
     {
         $this->forge->addField([
             'id' => [
-                'type'           => 'INT',
+                'type'           => 'BIGINT',
                 'constraint'     => 11,
                 'unsigned'       => true,
                 'auto_increment' => true,
@@ -24,7 +24,7 @@ class CreateStocktakesTable extends Migration
                 'comment'    => '盤點單號，格式 SK-YYYYMMDD-NNNN',
             ],
             'warehouse_id' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,
@@ -39,13 +39,13 @@ class CreateStocktakesTable extends Migration
                 'null' => true,
             ],
             'created_by' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,
             ],
             'confirmed_by' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => true,

@@ -25,11 +25,15 @@ use CodeIgniter\HTTP\ResponseInterface;
  */
 class SalesOrderController extends BaseApiController
 {
-    public function __construct(
-        private readonly SalesOrderService    $soService,
-        private readonly SalesOrderPdfService $pdfService,
-        private readonly SalesPaymentService  $paymentService,
-    ) {
+    private SalesOrderService $soService;
+    private SalesOrderPdfService $pdfService;
+    private SalesPaymentService $paymentService;
+
+    public function __construct()
+    {
+        $this->soService = \Config\Services::salesOrderService();
+        $this->pdfService = \Config\Services::salesOrderPdfService();
+        $this->paymentService = \Config\Services::salesPaymentService();
     }
 
     /**

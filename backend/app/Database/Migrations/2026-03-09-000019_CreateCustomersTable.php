@@ -17,7 +17,7 @@ class CreateCustomersTable extends Migration
     {
         $this->forge->addField([
             'id' => [
-                'type'           => 'INT',
+                'type'           => 'BIGINT',
                 'constraint'     => 11,
                 'unsigned'       => true,
                 'auto_increment' => true,
@@ -85,7 +85,7 @@ class CreateCustomersTable extends Migration
                 'default' => 1,
             ],
             'created_by' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => true,

@@ -19,8 +19,11 @@ use CodeIgniter\HTTP\ResponseInterface;
  */
 class SupplierController extends BaseApiController
 {
-    public function __construct(private readonly SupplierService $supplierService)
+    private SupplierService $supplierService;
+
+    public function __construct()
     {
+        $this->supplierService = \Config\Services::supplierService();
     }
 
     /**

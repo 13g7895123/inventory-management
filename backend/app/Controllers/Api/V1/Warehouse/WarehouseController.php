@@ -18,8 +18,11 @@ use CodeIgniter\HTTP\ResponseInterface;
  */
 class WarehouseController extends BaseApiController
 {
-    public function __construct(private readonly WarehouseService $warehouseService)
+    private WarehouseService $warehouseService;
+
+    public function __construct()
     {
+        $this->warehouseService = \Config\Services::warehouseService();
     }
 
     /**

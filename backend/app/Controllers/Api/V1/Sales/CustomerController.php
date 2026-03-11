@@ -21,9 +21,11 @@ use CodeIgniter\HTTP\ResponseInterface;
  */
 class CustomerController extends BaseApiController
 {
-    public function __construct(
-        private readonly CustomerService $customerService,
-    ) {
+    private CustomerService $customerService;
+
+    public function __construct()
+    {
+        $this->customerService = \Config\Services::customerService();
     }
 
     /**

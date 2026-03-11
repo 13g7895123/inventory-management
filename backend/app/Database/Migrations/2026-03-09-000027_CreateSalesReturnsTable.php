@@ -19,7 +19,7 @@ class CreateSalesReturnsTable extends Migration
     {
         $this->forge->addField([
             'id' => [
-                'type'           => 'INT',
+                'type'           => 'BIGINT',
                 'constraint'     => 11,
                 'unsigned'       => true,
                 'auto_increment' => true,
@@ -31,14 +31,14 @@ class CreateSalesReturnsTable extends Migration
                 'comment'    => '退貨單號，格式：SR-YYYYMMDD-NNNN',
             ],
             'sales_order_id' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,
                 'comment'    => '對應銷售訂單',
             ],
             'warehouse_id' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,
@@ -68,13 +68,13 @@ class CreateSalesReturnsTable extends Migration
                 'null' => true,
             ],
             'created_by' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,
             ],
             'confirmed_by' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => true,

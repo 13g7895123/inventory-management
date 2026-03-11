@@ -10,8 +10,11 @@ use CodeIgniter\HTTP\ResponseInterface;
 
 class UnitController extends BaseApiController
 {
-    public function __construct(private readonly UnitService $unitService)
+    private UnitService $unitService;
+
+    public function __construct()
     {
+        $this->unitService = \Config\Services::unitService();
     }
 
     /**

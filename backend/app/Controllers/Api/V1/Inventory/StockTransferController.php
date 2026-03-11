@@ -19,8 +19,11 @@ use CodeIgniter\HTTP\ResponseInterface;
  */
 class StockTransferController extends BaseApiController
 {
-    public function __construct(private readonly StockTransferService $stockTransferService)
+    private StockTransferService $stockTransferService;
+
+    public function __construct()
     {
+        $this->stockTransferService = \Config\Services::stockTransferService();
     }
 
     /**

@@ -12,7 +12,7 @@ class CreatePurchaseReturnsTable extends Migration
     {
         $this->forge->addField([
             'id' => [
-                'type'           => 'INT',
+                'type'           => 'BIGINT',
                 'constraint'     => 11,
                 'unsigned'       => true,
                 'auto_increment' => true,
@@ -24,7 +24,7 @@ class CreatePurchaseReturnsTable extends Migration
                 'comment'    => '退貨單號，格式 PR-YYYYMMDD-NNNN',
             ],
             'purchase_order_id' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,
@@ -45,13 +45,13 @@ class CreatePurchaseReturnsTable extends Migration
                 'null' => true,
             ],
             'created_by' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,
             ],
             'confirmed_by' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => true,

@@ -27,12 +27,17 @@ use CodeIgniter\HTTP\ResponseInterface;
  */
 class PurchaseOrderController extends BaseApiController
 {
-    public function __construct(
-        private readonly PurchaseOrderService    $poService,
-        private readonly GoodsReceiptService     $grService,
-        private readonly PurchaseOrderPdfService $pdfService,
-        private readonly SupplierPaymentService  $paymentService,
-    ) {
+    private PurchaseOrderService $poService;
+    private GoodsReceiptService $grService;
+    private PurchaseOrderPdfService $pdfService;
+    private SupplierPaymentService $paymentService;
+
+    public function __construct()
+    {
+        $this->poService = \Config\Services::purchaseOrderService();
+        $this->grService = \Config\Services::goodsReceiptService();
+        $this->pdfService = \Config\Services::purchaseOrderPdfService();
+        $this->paymentService = \Config\Services::supplierPaymentService();
     }
 
     /**

@@ -50,69 +50,45 @@ class ReportService
      */
     public function getDashboardKpi(): array
     {
-        $monthStart = date('Y-m-01 00:00:00');
-        $monthEnd   = date('Y-m-t 23:59:59');
+        $monthStart = $this->db->escape(date('Y-m-01'));
+        $monthEnd   = $this->db->escape(date('Y-m-t'));
 
-        // 待確認銷售單（draft 狀態）
-        $pendingSO = (int) $this->db
-            ->table('sales_orders')
-            ->where('status', 'draft')
-            ->whereNull('deleted_at')
-            ->countAllResults();
+        // 使用原始 SQL 避免 QueryBuilder 狀態問題
+        $sql = "
+            SELECT
+                (SELECT COUNT(*) FROM sales_orders
+                 WHERE status = 'draft' AND deleted_at IS NULL) AS pending_sales_orders,
+                (SELECT COUNT(*) FROM purchase_orders
+                 WHERE status = 'pending' AND deleted_at IS NULL) AS pending_purchase_orders,
+                (SELECT COUNT(*) FROM inventory i
+                 JOIN item_skus s ON s.id = i.sku_id
+                 JOIN items it ON it.id = s.item_id
+                 WHERE (i.on_hand_qty - i.reserved_qty) < it.safety_stock
+                   AND it.safety_stock > 0
+                   AND it.deleted_at IS NULL) AS low_stock_count,
+                (SELECT COALESCE(SUM(total_amount), 0) FROM sales_orders
+                 WHERE status IN ('confirmed', 'partial', 'shipped')
+                   AND order_date BETWEEN {$monthStart} AND {$monthEnd}
+                   AND deleted_at IS NULL) AS monthly_sales_amount,
+                (SELECT COALESCE(SUM(total_amount), 0) FROM purchase_orders
+                 WHERE status IN ('approved', 'partial', 'received')
+                   AND created_at BETWEEN {$monthStart} AND {$monthEnd}
+                   AND deleted_at IS NULL) AS monthly_purchase_amount,
+                (SELECT COUNT(*) FROM sales_orders
+                 WHERE status IN ('confirmed', 'partial', 'shipped')
+                   AND order_date BETWEEN {$monthStart} AND {$monthEnd}
+                   AND deleted_at IS NULL) AS monthly_sales_orders
+        ";
 
-        // 待審核採購單（pending 狀態）
-        $pendingPO = (int) $this->db
-            ->table('purchase_orders')
-            ->where('status', 'pending')
-            ->whereNull('deleted_at')
-            ->countAllResults();
-
-        // 低庫存品項（可用庫存 < 安全庫存）
-        $lowStockCount = (int) $this->db
-            ->table('inventory i')
-            ->join('item_skus s', 's.id = i.sku_id')
-            ->join('items it', 'it.id = s.item_id')
-            ->where('(i.on_hand_qty - i.reserved_qty) <', $this->db->escape('it.safety_stock'), false)
-            ->where('it.safety_stock >', 0)
-            ->whereNull('it.deleted_at')
-            ->countAllResults();
-
-        // 本月銷售總額（confirmed/partial/shipped）
-        $monthlySales = (float) ($this->db
-            ->table('sales_orders')
-            ->selectSum('total_amount')
-            ->whereIn('status', ['confirmed', 'partial', 'shipped'])
-            ->where('order_date >=', $monthStart)
-            ->where('order_date <=', $monthEnd)
-            ->whereNull('deleted_at')
-            ->get()->getRow()?->total_amount ?? 0);
-
-        // 本月採購總額（approved/partial/received）
-        $monthlyPurchase = (float) ($this->db
-            ->table('purchase_orders')
-            ->selectSum('total_amount')
-            ->whereIn('status', ['approved', 'partial', 'received'])
-            ->where('order_date >=', $monthStart)
-            ->where('order_date <=', $monthEnd)
-            ->whereNull('deleted_at')
-            ->get()->getRow()?->total_amount ?? 0);
-
-        // 本月銷售訂單數
-        $monthlySalesOrders = (int) $this->db
-            ->table('sales_orders')
-            ->whereIn('status', ['confirmed', 'partial', 'shipped'])
-            ->where('order_date >=', $monthStart)
-            ->where('order_date <=', $monthEnd)
-            ->whereNull('deleted_at')
-            ->countAllResults();
+        $row = $this->db->query($sql)->getRow();
 
         return [
-            'pending_sales_orders'    => $pendingSO,
-            'pending_purchase_orders' => $pendingPO,
-            'low_stock_count'         => $lowStockCount,
-            'monthly_sales_amount'    => $monthlySales,
-            'monthly_purchase_amount' => $monthlyPurchase,
-            'monthly_sales_orders'    => $monthlySalesOrders,
+            'pending_sales_orders'    => (int) ($row->pending_sales_orders ?? 0),
+            'pending_purchase_orders' => (int) ($row->pending_purchase_orders ?? 0),
+            'low_stock_count'         => (int) ($row->low_stock_count ?? 0),
+            'monthly_sales_amount'    => (float) ($row->monthly_sales_amount ?? 0),
+            'monthly_purchase_amount' => (float) ($row->monthly_purchase_amount ?? 0),
+            'monthly_sales_orders'    => (int) ($row->monthly_sales_orders ?? 0),
         ];
     }
 
@@ -134,7 +110,7 @@ class ReportService
             ->select('DATE(order_date) as date, SUM(total_amount) as amount, COUNT(*) as order_count')
             ->whereIn('status', ['confirmed', 'partial', 'shipped'])
             ->where('order_date >=', $dateFrom . ' 00:00:00')
-            ->whereNull('deleted_at')
+            ->where('deleted_at IS NULL')
             ->groupBy('DATE(order_date)')
             ->orderBy('date', 'ASC')
             ->get()->getResultArray();
@@ -146,11 +122,12 @@ class ReportService
         $today    = strtotime(date('Y-m-d'));
 
         while ($current <= $today) {
-            $dateStr = date('Y-m-d', $current);
+            $dateStr  = date('Y-m-d', $current);
+            $entry    = $dateMap[$dateStr] ?? null;
             $result[] = [
                 'date'        => $dateStr,
-                'amount'      => $dateMap[$dateStr] ? (float) $dateMap[$dateStr]['amount'] : 0.0,
-                'order_count' => $dateMap[$dateStr] ? (int) $dateMap[$dateStr]['order_count'] : 0,
+                'amount'      => $entry !== null ? (float) $entry['amount'] : 0.0,
+                'order_count' => $entry !== null ? (int) $entry['order_count'] : 0,
             ];
             $current = strtotime('+1 day', $current);
         }
@@ -200,8 +177,8 @@ class ReportService
             ->join('item_skus s',    's.id  = inv.sku_id')
             ->join('items it',       'it.id = s.item_id')
             ->join('warehouses w',   'w.id  = inv.warehouse_id')
-            ->whereNull('it.deleted_at')
-            ->whereNull('w.deleted_at');
+            ->where('it.deleted_at IS NULL')
+            ->where('w.deleted_at IS NULL');
 
         if ($warehouseId !== null) {
             $query->where('inv.warehouse_id', $warehouseId);
@@ -225,12 +202,12 @@ class ReportService
             ->select('
                 tx.sku_id,
                 tx.warehouse_id,
-                tx.transaction_type,
-                tx.quantity,
+                tx.tx_type,
+                tx.qty_change,
                 tx.unit_cost
             ')
-            ->where('tx.performed_at >=', $dateFromFull)
-            ->where('tx.performed_at <=', $dateTofull);
+            ->where('tx.occurred_at >=', $dateFromFull)
+            ->where('tx.occurred_at <=', $dateTofull);
 
         if ($warehouseId !== null) {
             $txQuery->where('tx.warehouse_id', $warehouseId);
@@ -245,23 +222,18 @@ class ReportService
             if (!isset($txMap[$key])) {
                 $txMap[$key] = ['in' => 0.0, 'out' => 0.0, 'adjust' => 0.0];
             }
-            $qty = (float) $tx['quantity'];
-            switch ($tx['transaction_type']) {
-                case 'IN':
+            $qty = (float) $tx['qty_change'];
+            switch ($tx['tx_type']) {
+                case 'REPLENISH':
                 case 'TRANSFER_IN':
                     $txMap[$key]['in'] += $qty;
                     break;
-                case 'OUT':
+                case 'DEDUCT':
                 case 'TRANSFER_OUT':
                     $txMap[$key]['out'] += abs($qty);
                     break;
                 case 'ADJUST':
-                case 'COUNT':
-                    if ($qty >= 0) {
-                        $txMap[$key]['adjust'] += $qty;
-                    } else {
-                        $txMap[$key]['adjust'] += $qty; // 負調整
-                    }
+                    $txMap[$key]['adjust'] += $qty;
                     break;
             }
         }
@@ -336,7 +308,7 @@ class ReportService
             ->whereIn('so.status', ['confirmed', 'partial', 'shipped'])
             ->where('so.order_date >=', $dateFromFull)
             ->where('so.order_date <=', $dateTofull)
-            ->whereNull('so.deleted_at');
+            ->where('so.deleted_at IS NULL');
 
         if ($customerId !== null) {
             $baseQuery->where('so.customer_id', $customerId);
@@ -382,7 +354,7 @@ class ReportService
             ->whereIn('status', ['confirmed', 'partial', 'shipped'])
             ->where('order_date >=', $dateFromFull)
             ->where('order_date <=', $dateTofull)
-            ->whereNull('deleted_at');
+            ->where('deleted_at IS NULL');
 
         if ($customerId !== null) {
             $summary->where('customer_id', $customerId);
@@ -435,9 +407,9 @@ class ReportService
         $base = $this->db
             ->table('purchase_orders po')
             ->whereIn('po.status', ['approved', 'partial', 'received'])
-            ->where('po.order_date >=', $dateFromFull)
-            ->where('po.order_date <=', $dateTofull)
-            ->whereNull('po.deleted_at');
+            ->where('po.created_at >=', $dateFromFull)
+            ->where('po.created_at <=', $dateTofull)
+            ->where('po.deleted_at IS NULL');
 
         if ($supplierId !== null) {
             $base->where('po.supplier_id', $supplierId);
@@ -472,9 +444,9 @@ class ReportService
             ->join('item_skus s',        's.id  = pol.sku_id')
             ->join('items it',           'it.id = s.item_id')
             ->whereIn('po.status', ['approved', 'partial', 'received'])
-            ->where('po.order_date >=', $dateFromFull)
-            ->where('po.order_date <=', $dateTofull)
-            ->whereNull('po.deleted_at');
+            ->where('po.created_at >=', $dateFromFull)
+            ->where('po.created_at <=', $dateTofull)
+            ->where('po.deleted_at IS NULL');
 
         if ($supplierId !== null) {
             $byItem->where('po.supplier_id', $supplierId);
@@ -491,9 +463,9 @@ class ReportService
             ->selectSum('total_amount', 'total_purchase')
             ->selectCount('id', 'total_orders')
             ->whereIn('status', ['approved', 'partial', 'received'])
-            ->where('order_date >=', $dateFromFull)
-            ->where('order_date <=', $dateTofull)
-            ->whereNull('deleted_at');
+            ->where('created_at >=', $dateFromFull)
+            ->where('created_at <=', $dateTofull)
+            ->where('deleted_at IS NULL');
 
         if ($supplierId !== null) {
             $summaryBase->where('supplier_id', $supplierId);
@@ -553,18 +525,18 @@ class ReportService
                 SUM(so.total_amount)      AS revenue,
                 SUM(
                     COALESCE((
-                        SELECT SUM(ABS(tx.quantity) * tx.unit_cost)
+                        SELECT SUM(ABS(tx.qty_change) * tx.unit_cost)
                         FROM inventory_transactions tx
-                        WHERE tx.source_document_type = \'sales_order\'
-                          AND tx.source_document_id   = so.id
-                          AND tx.transaction_type     = \'OUT\'
+                        WHERE tx.source_type = \'sales_order\'
+                          AND tx.source_id   = so.id
+                          AND tx.tx_type     = \'DEDUCT\'
                     ), 0)
                 )                         AS cogs
             ')
             ->whereIn('so.status', ['confirmed', 'partial', 'shipped'])
             ->where('so.order_date >=', $dateFromFull)
             ->where('so.order_date <=', $dateTofull)
-            ->whereNull('so.deleted_at');
+            ->where('so.deleted_at IS NULL');
 
         if ($warehouseId !== null) {
             $dailyQuery->where('so.warehouse_id', $warehouseId);
@@ -600,12 +572,12 @@ class ReportService
                 SUM(sol.line_total)   AS revenue,
                 SUM(
                     COALESCE((
-                        SELECT SUM(ABS(tx2.quantity) * tx2.unit_cost)
+                        SELECT SUM(ABS(tx2.qty_change) * tx2.unit_cost)
                         FROM inventory_transactions tx2
-                        WHERE tx2.source_document_type = \'sales_order\'
-                          AND tx2.source_document_id   = sol.sales_order_id
-                          AND tx2.sku_id               = sol.sku_id
-                          AND tx2.transaction_type     = \'OUT\'
+                        WHERE tx2.source_type = \'sales_order\'
+                          AND tx2.source_id   = sol.sales_order_id
+                          AND tx2.sku_id      = sol.sku_id
+                          AND tx2.tx_type     = \'DEDUCT\'
                     ), 0)
                 )                     AS cogs
             ')
@@ -615,7 +587,7 @@ class ReportService
             ->whereIn('so.status', ['confirmed', 'partial', 'shipped'])
             ->where('so.order_date >=', $dateFromFull)
             ->where('so.order_date <=', $dateTofull)
-            ->whereNull('so.deleted_at');
+            ->where('so.deleted_at IS NULL');
 
         if ($warehouseId !== null) {
             $bySkuQuery->where('so.warehouse_id', $warehouseId);
@@ -684,11 +656,11 @@ class ReportService
             ->select('
                 tx.sku_id,
                 tx.warehouse_id,
-                SUM(ABS(tx.quantity) * tx.unit_cost) AS cogs
+                SUM(ABS(tx.qty_change) * tx.unit_cost) AS cogs
             ')
-            ->where('tx.transaction_type', 'OUT')
-            ->where('tx.performed_at >=', $dateFromFull)
-            ->where('tx.performed_at <=', $dateTofull)
+            ->where('tx.tx_type', 'DEDUCT')
+            ->where('tx.occurred_at >=', $dateFromFull)
+            ->where('tx.occurred_at <=', $dateTofull)
             ->groupBy(['tx.sku_id', 'tx.warehouse_id']);
 
         if ($warehouseId !== null) {
@@ -716,8 +688,8 @@ class ReportService
             ->join('item_skus s',  's.id = inv.sku_id')
             ->join('items it',     'it.id = s.item_id')
             ->join('warehouses w', 'w.id  = inv.warehouse_id')
-            ->whereNull('it.deleted_at')
-            ->whereNull('w.deleted_at');
+            ->where('it.deleted_at IS NULL')
+            ->where('w.deleted_at IS NULL');
 
         if ($warehouseId !== null) {
             $invQuery->where('inv.warehouse_id', $warehouseId);

@@ -18,8 +18,11 @@ use CodeIgniter\HTTP\ResponseInterface;
  */
 class InventoryController extends BaseApiController
 {
-    public function __construct(private readonly InventoryService $inventoryService)
+    private InventoryService $inventoryService;
+
+    public function __construct()
     {
+        $this->inventoryService = \Config\Services::inventoryService();
     }
 
     /**

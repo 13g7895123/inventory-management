@@ -18,13 +18,13 @@ class CreateInventoryTransactionsTable extends Migration
                 'auto_increment' => true,
             ],
             'sku_id' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,
             ],
             'warehouse_id' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,
@@ -59,13 +59,13 @@ class CreateInventoryTransactionsTable extends Migration
                 'comment'    => 'sales_order|purchase_order|adjustment|transfer|stocktake',
             ],
             'source_id' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => true,
             ],
             'operator_id' => [
-                'type'       => 'INT',
+                'type'           => 'BIGINT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => true,
