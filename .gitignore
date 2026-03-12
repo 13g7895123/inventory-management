@@ -9,6 +9,7 @@ backend/vendor/
 backend/writable/cache/*
 backend/writable/logs/*
 backend/writable/uploads/*
+backend/writable/debugbar/*
 backend/.env
 !backend/writable/cache/.gitkeep
 !backend/writable/logs/.gitkeep
